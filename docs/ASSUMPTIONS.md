@@ -52,9 +52,9 @@ This document outlines the assumptions made during the development of GreatReads
 
 ## Technical Assumptions
 
-1. **Vercel Hosting**: The app is designed for Vercel deployment
-2. **Supabase Database**: PostgreSQL via Supabase is the expected database
-3. **Cron Interval**: 30-minute polling interval is sufficient for near-real-time updates
+1. **Vercel Hosting**: The app is designed for Vercel deployment (Hobby tier)
+2. **Neon Database**: PostgreSQL via Neon (free tier: 0.5 GB storage)
+3. **Cron Interval**: Daily polling on Vercel Hobby (upgrade to Pro for 30-min polling)
 
 ## Gift Experience (Mark Thomas Litton)
 
