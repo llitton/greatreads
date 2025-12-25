@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  notifyEmail   Boolean   @default(true)
+  notifySms     Boolean   @default(false)
+  isGiftUser    Boolean   @default(false) // For Mark Thomas Litton
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts             Account[]
+  sessions             Session[]
+  friendSources        FriendSource[]
+  friendFiveStarEvents FriendFiveStarEvent[]
+  userBookStatuses     UserBookStatus[]
+  topTens              TopTen[]
+  topTenRequestsSent   TopTenRequest[]       @relation("RequestsSent")
+  notifications        NotificationLog[]
+}
+
+model FriendSource {
+  id             String    @id @default(cuid())
+  userId         String
+  label          String // Friend's name
+  rssUrl         String    @db.Text
+  lastFetchedAt  DateTime?
+  lastEtag       String?
+  lastModified   String?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events FriendFiveStarEvent[]
+
+  @@index([userId])
+  @@index([active])
+}
+
+model Book {
+  id              String  @id @default(cuid())
+  title           String
+  author          String?
+  goodreadsBookUrl String? @db.Text
+  coverUrl        String? @db.Text
+  isbn            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events           FriendFiveStarEvent[]
+  userBookStatuses UserBookStatus[]
+  topTenItems      TopTenItem[]
+
+  @@index([title])
+  @@index([isbn])
+}
+
+model FriendFiveStarEvent {
+  id             String   @id @default(cuid())
+  userId         String
+  friendSourceId String
+  externalGuid   String   @unique // Dedupe key
+  bookId         String
+  friendName     String
+  rating         Int      @default(5)
+  reviewText     String?  @db.Text
+  eventUrl       String?  @db.Text
+  eventDate      DateTime?
+  rawPayload     Json?
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  friendSource FriendSource @relation(fields: [friendSourceId], references: [id], onDelete: Cascade)
+  book         Book         @relation(fields: [bookId], references: [id])
+
+  @@index([userId])
+  @@index([friendSourceId])
+  @@index([bookId])
+  @@index([createdAt])
+}
+
+enum BookStatus {
+  WANT_TO_READ
+  READING
+  READ
+}
+
+model UserBookStatus {
+  id         String     @id @default(cuid())
+  userId     String
+  bookId     String
+  status     BookStatus
+  userRating Int?       // 1-5
+  userNotes  String?    @db.Text
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+}
+
+model TopTen {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   @default("Top 10")
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items TopTenItem[]
+
+  @@index([userId])
+}
+
+model TopTenItem {
+  id        String   @id @default(cuid())
+  topTenId  String
+  bookId    String
+  rank      Int
+  createdAt DateTime @default(now())
+
+  topTen TopTen @relation(fields: [topTenId], references: [id], onDelete: Cascade)
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([topTenId, bookId])
+  @@unique([topTenId, rank])
+  @@index([topTenId])
+}
+
+enum TopTenRequestStatus {
+  PENDING
+  VIEWED
+  RESPONDED
+}
+
+model TopTenRequest {
+  id           String              @id @default(cuid())
+  fromUserId   String
+  toEmail      String
+  toName       String?
+  message      String?             @db.Text
+  token        String              @unique
+  status       TopTenRequestStatus @default(PENDING)
+  responseData Json?               // Store their Top 10 response
+  createdAt    DateTime            @default(now())
+  viewedAt     DateTime?
+  respondedAt  DateTime?
+
+  fromUser User @relation("RequestsSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  @@index([fromUserId])
+  @@index([token])
+  @@index([toEmail])
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // 'email' or 'sms'
+  subject   String?
+  body      String   @db.Text
+  sentAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sentAt])
+}
+
+model CronLog {
+  id             String   @id @default(cuid())
+  runAt          DateTime @default(now())
+  sourcesPolled  Int      @default(0)
+  newEventsFound Int      @default(0)
+  notificationsSent Int   @default(0)
+  errors         Json?
+  duration       Int?     // milliseconds
+}

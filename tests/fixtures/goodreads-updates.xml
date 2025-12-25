@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Jane's Recent Updates</title>
+    <link>https://www.goodreads.com/user/show/12345-jane</link>
+    <description>Jane's recent activity on Goodreads</description>
+    <item>
+      <title>Jane rated The Great Gatsby by F. Scott Fitzgerald - 5 stars</title>
+      <link>https://www.goodreads.com/review/show/123456789</link>
+      <pubDate>Mon, 23 Dec 2024 10:30:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/review/show/123456789</guid>
+      <description><![CDATA[Jane rated it 5 out of 5 stars. Absolutely stunning prose and a masterful critique of the American Dream.]]></description>
+    </item>
+    <item>
+      <title>Jane rated 1984 by George Orwell - 4 stars</title>
+      <link>https://www.goodreads.com/review/show/123456790</link>
+      <pubDate>Sun, 22 Dec 2024 14:20:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/review/show/123456790</guid>
+      <description><![CDATA[Jane rated it 4 out of 5 stars. Chilling and prescient.]]></description>
+    </item>
+    <item>
+      <title>Jane wants to read To Kill a Mockingbird by Harper Lee</title>
+      <link>https://www.goodreads.com/book/show/2657</link>
+      <pubDate>Sat, 21 Dec 2024 09:00:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/user_status/12345</guid>
+      <description><![CDATA[Jane added To Kill a Mockingbird to their want to read shelf.]]></description>
+    </item>
+    <item>
+      <title>Jane rated Project Hail Mary by Andy Weir ★★★★★</title>
+      <link>https://www.goodreads.com/review/show/123456791</link>
+      <pubDate>Fri, 20 Dec 2024 16:45:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/review/show/123456791</guid>
+      <description><![CDATA[Amazing sci-fi adventure! Rocky is the best.]]></description>
+    </item>
+    <item>
+      <title>Jane gave it 5 stars: The Midnight Library by Matt Haig</title>
+      <link>https://www.goodreads.com/review/show/123456792</link>
+      <pubDate>Thu, 19 Dec 2024 11:15:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/review/show/123456792</guid>
+      <description><![CDATA[A beautiful exploration of regret and possibility.]]></description>
+    </item>
+  </channel>
+</rss>

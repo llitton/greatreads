@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>John's read bookshelf</title>
+    <link>https://www.goodreads.com/review/list_rss/67890?shelf=read</link>
+    <description>John's read shelf on Goodreads</description>
+    <item>
+      <title>Dune</title>
+      <link>https://www.goodreads.com/book/show/234225</link>
+      <book_id>234225</book_id>
+      <book_image_url>https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1555447414l/234225.jpg</book_image_url>
+      <book_medium_image_url>https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1555447414l/234225._SX98_.jpg</book_medium_image_url>
+      <author_name>Frank Herbert</author_name>
+      <isbn>0441172717</isbn>
+      <user_name>John</user_name>
+      <user_rating>5</user_rating>
+      <user_read_at>Sat, 14 Dec 2024 00:00:00 -0800</user_read_at>
+      <user_date_added>Sat, 14 Dec 2024 12:30:00 -0800</user_date_added>
+      <user_shelves>read, favorites, sci-fi</user_shelves>
+      <average_rating>4.27</average_rating>
+      <book_published>1965</book_published>
+      <description><![CDATA[<img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1555447414l/234225.jpg" /><br/>An epic masterpiece of science fiction.]]></description>
+      <pubDate>Sat, 14 Dec 2024 12:30:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/review/show/987654321</guid>
+    </item>
+    <item>
+      <title>The Hobbit</title>
+      <link>https://www.goodreads.com/book/show/5907</link>
+      <book_id>5907</book_id>
+      <author_name>J.R.R. Tolkien</author_name>
+      <user_name>John</user_name>
+      <user_rating>4</user_rating>
+      <user_read_at>Wed, 11 Dec 2024 00:00:00 -0800</user_read_at>
+      <user_date_added>Wed, 11 Dec 2024 09:00:00 -0800</user_date_added>
+      <pubDate>Wed, 11 Dec 2024 09:00:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/review/show/987654322</guid>
+    </item>
+    <item>
+      <title>Atomic Habits</title>
+      <link>https://www.goodreads.com/book/show/40121378</link>
+      <book_id>40121378</book_id>
+      <author_name>James Clear</author_name>
+      <user_name>John</user_name>
+      <user_rating>5</user_rating>
+      <user_read_at>Mon, 09 Dec 2024 00:00:00 -0800</user_read_at>
+      <user_date_added>Mon, 09 Dec 2024 15:45:00 -0800</user_date_added>
+      <pubDate>Mon, 09 Dec 2024 15:45:00 -0800</pubDate>
+      <guid>https://www.goodreads.com/review/show/987654323</guid>
+    </item>
+  </channel>
+</rss>
