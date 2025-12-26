@@ -11,6 +11,10 @@ const navItems = [
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
+const secondaryItems = [
+  { href: '/under-the-hood', label: 'How It Works', icon: '◇' },
+];
+
 export function Sidebar() {
   const pathname = usePathname();
 
@@ -49,6 +53,30 @@ export function Sidebar() {
           })}
         </ul>
       </nav>
+
+      {/* Secondary nav */}
+      <div className="px-4 pb-2">
+        <ul className="space-y-1">
+          {secondaryItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-xl no-underline transition-all text-xs ${
+                    isActive
+                      ? 'text-[#1f1a17]'
+                      : 'text-neutral-400 hover:text-neutral-600'
+                  }`}
+                >
+                  <span className="text-sm opacity-50">{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       {/* Bottom decoration */}
       <div className="p-6 border-t border-black/5">

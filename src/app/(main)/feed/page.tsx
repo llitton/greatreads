@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { FeedCard } from '@/components/feed/feed-card';
 import { AddFriendForm } from '@/components/feed/add-friend-form';
 import { Button } from '@/components/ui/button';
+import { WelcomeMessage } from '@/components/welcome-message';
 import Link from 'next/link';
 
 interface FeedEvent {
@@ -153,6 +154,9 @@ export default function FeedPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
+      {/* One-time welcome message for first visit */}
+      <WelcomeMessage />
+
       {/* ═══════════════════════════════════════════════════════════════════
           ACT 1: EMOTIONAL ANCHOR (HERO)
           This should dominate — personal, intentional, calm

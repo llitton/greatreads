@@ -107,7 +107,9 @@ export default function ReflectionsPage() {
             </h2>
 
             <p className="text-[15px] leading-7 text-neutral-600 mb-8 max-w-sm mx-auto">
-              When you finish a book that matters, add it here with a note about why it stayed.
+              Some books don&apos;t matter until years later.
+              <br />
+              This is a place to leave a note for your future self.
             </p>
 
             <Link href="/my-books">
@@ -118,7 +120,7 @@ export default function ReflectionsPage() {
           </div>
 
           <p className="text-center text-sm text-neutral-300 mt-12 italic">
-            Some books take years to understand.
+            The best ones take time to understand.
           </p>
         </section>
       ) : (
