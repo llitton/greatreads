@@ -32,7 +32,6 @@ export default function ReflectionsPage() {
     try {
       const res = await fetch('/api/books/status');
       const data = await res.json();
-      // Filter to books that have been read and rated 5 stars OR have notes
       const reflectionBooks = data.filter(
         (b: ReflectionBook) => b.status === 'READ' && (b.userRating === 5 || b.userNotes)
       );
@@ -74,51 +73,60 @@ export default function ReflectionsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      {/* Hero section */}
-      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-8">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#1f1a17] text-white text-xl flex items-center justify-center flex-shrink-0">
-            💭
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-[#1f1a17] mb-1">
-              Books That Shaped How I Think
-            </h1>
-            <p className="text-[15px] text-neutral-500">
-              Not ranked. Not public. Just reflection.
-            </p>
-          </div>
+    <div className="max-w-2xl mx-auto px-4">
+      {/* Page header - no card, just text breathing */}
+      <header className="pt-4 pb-12">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-2xl">💭</span>
+          <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+            Private
+          </span>
         </div>
 
-        <p className="text-[15px] leading-relaxed text-neutral-600">
-          These are the books that left a mark — the ones you find yourself thinking about
-          months or years later. Add a few words about what each one meant to you.
+        <h1 className="text-3xl font-semibold text-[#1f1a17] mb-3">
+          Books That Shaped How I Think
+        </h1>
+
+        <p className="text-[17px] leading-relaxed text-neutral-500 max-w-lg">
+          The ones you find yourself thinking about months or years later.
         </p>
-      </div>
+      </header>
 
-      {/* Books list */}
+      {/* Content */}
       {books.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-10 text-center">
-          <div className="text-5xl mb-4">📚</div>
-          <h2 className="text-lg font-semibold text-[#1f1a17] mb-2">
-            No reflections yet
-          </h2>
-          <p className="text-[15px] text-neutral-600 mb-6 max-w-sm mx-auto">
-            Books you&apos;ve read and rated 5 stars, or added notes to, will appear here.
+        /* Empty state - reflection prompt, not alert */
+        <section className="mt-8">
+          <div className="bg-[#faf8f5] rounded-3xl py-16 px-10 text-center max-w-xl mx-auto">
+            <div className="text-5xl mb-6">📚</div>
+
+            <h2 className="text-xl font-semibold text-[#1f1a17] mb-3">
+              Your reflections will live here
+            </h2>
+
+            <p className="text-[15px] leading-7 text-neutral-600 mb-8 max-w-sm mx-auto">
+              When you rate a book 5 stars or add notes in My Books,
+              it becomes part of your reflection space.
+            </p>
+
+            <Link href="/my-books">
+              <Button variant="secondary" size="sm">
+                Browse My Books
+              </Button>
+            </Link>
+          </div>
+
+          {/* Aspirational note */}
+          <p className="text-center text-[15px] text-neutral-400 mt-10 max-w-md mx-auto leading-relaxed">
+            The books that change us don&apos;t always reveal themselves right away.
           </p>
-          <Link href="/my-books">
-            <Button variant="secondary">
-              Go to My Books
-            </Button>
-          </Link>
-        </div>
+        </section>
       ) : (
-        <div className="space-y-4">
+        /* Books with reflections */
+        <section className="space-y-6">
           {books.map((item) => (
-            <div
+            <article
               key={item.id}
-              className="bg-white rounded-2xl border border-black/5 shadow-sm p-6 hover:shadow-md transition-shadow"
+              className="group py-6 border-b border-black/5 last:border-0"
             >
               <div className="flex gap-5">
                 {/* Cover */}
@@ -126,11 +134,11 @@ export default function ReflectionsPage() {
                   <img
                     src={item.book.coverUrl}
                     alt=""
-                    className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                    className="w-14 h-20 object-cover rounded-lg shadow-sm flex-shrink-0 transition-transform group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-16 h-24 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-2xl">📕</span>
+                  <div className="w-14 h-20 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-xl">📕</span>
                   </div>
                 )}
 
@@ -140,7 +148,7 @@ export default function ReflectionsPage() {
                     {item.book.title}
                   </h3>
                   {item.book.author && (
-                    <p className="text-sm text-neutral-500 mb-3">{item.book.author}</p>
+                    <p className="text-sm text-neutral-400 mb-4">{item.book.author}</p>
                   )}
 
                   {/* Edit mode */}
@@ -149,8 +157,8 @@ export default function ReflectionsPage() {
                       <textarea
                         value={editNotes}
                         onChange={(e) => setEditNotes(e.target.value)}
-                        className="w-full px-4 py-3 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
-                        rows={3}
+                        className="w-full px-4 py-3 text-[15px] leading-relaxed bg-neutral-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
+                        rows={4}
                         placeholder="What did this book change about how you see the world?"
                         autoFocus
                       />
@@ -158,45 +166,48 @@ export default function ReflectionsPage() {
                         <Button size="sm" onClick={() => handleSaveReflection(item.book.id)}>
                           Save
                         </Button>
-                        <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="text-sm text-neutral-500 hover:text-neutral-700 px-3"
+                        >
                           Cancel
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   ) : (
                     <>
                       {/* Reflection display */}
                       {item.userNotes ? (
-                        <div className="bg-neutral-50 rounded-xl px-4 py-3 mb-3">
-                          <p className="text-[15px] leading-relaxed text-neutral-700 italic">
-                            &ldquo;{item.userNotes}&rdquo;
-                          </p>
-                        </div>
+                        <p className="text-[15px] leading-7 text-neutral-600 italic mb-3">
+                          &ldquo;{item.userNotes}&rdquo;
+                        </p>
                       ) : (
-                        <p className="text-sm text-neutral-400 italic mb-3">
+                        <p className="text-sm text-neutral-300 italic mb-3">
                           No reflection yet
                         </p>
                       )}
 
                       <button
                         onClick={() => startEdit(item)}
-                        className="text-sm text-neutral-500 hover:text-[#1f1a17] transition-colors"
+                        className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
                       >
-                        {item.userNotes ? 'Edit reflection' : 'Add a reflection'}
+                        {item.userNotes ? 'Edit' : 'Add a reflection'}
                       </button>
                     </>
                   )}
                 </div>
               </div>
-            </div>
+            </article>
           ))}
-        </div>
+        </section>
       )}
 
-      {/* Quiet footer */}
-      <p className="text-center text-sm text-neutral-300 italic pt-4">
-        The books that matter most often take years to understand.
-      </p>
+      {/* Quiet footer - standalone, generous spacing */}
+      <footer className="mt-20 mb-8 text-center">
+        <p className="text-[15px] text-neutral-300 italic leading-relaxed">
+          The books that matter most often take years to understand.
+        </p>
+      </footer>
     </div>
   );
 }
