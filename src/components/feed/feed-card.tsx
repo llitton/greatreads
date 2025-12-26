@@ -38,7 +38,7 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
   };
 
   return (
-    <article className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm hover:shadow-md transition-shadow animate-fadeIn overflow-hidden">
+    <article className="bg-white rounded-2xl border border-black/5 shadow-sm hover:shadow-md transition-shadow animate-fadeIn overflow-hidden">
       {/* Book spine accent */}
       <div className="flex">
         <div className="w-1.5 bg-gradient-to-b from-[#d4a855] to-[#c49845] flex-shrink-0" />
@@ -80,20 +80,22 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
                 </div>
               </div>
 
-              {/* Friend attribution */}
-              <p className="text-sm text-[#8b7355] mt-3 mb-3">
-                <span className="font-medium text-[#5b4a3f]">{event.friendName}</span>{' '}
-                loved this
+              {/* Why you're seeing this */}
+              <div className="flex items-center gap-2 mt-3 mb-3">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
+                  <span className="text-amber-500">★</span>
+                  {event.friendName} loved this
+                </span>
                 {event.eventDate && (
-                  <span>
-                    {' '}· {formatDistanceToNow(new Date(event.eventDate), { addSuffix: true })}
+                  <span className="text-xs text-neutral-400">
+                    {formatDistanceToNow(new Date(event.eventDate), { addSuffix: true })}
                   </span>
                 )}
-              </p>
+              </div>
 
               {/* Review snippet */}
               {event.reviewText && (
-                <p className="text-sm text-[#5b4a3f] line-clamp-2 mb-4 italic bg-[#fbf7ef] rounded-lg px-4 py-3 border-l-2 border-[#d4a855]">
+                <p className="text-[15px] leading-relaxed text-neutral-600 line-clamp-2 mb-4 italic bg-neutral-50 rounded-xl px-4 py-3 border-l-2 border-[#d4a855]">
                   &ldquo;{event.reviewText}&rdquo;
                 </p>
               )}

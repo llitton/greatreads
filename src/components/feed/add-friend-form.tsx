@@ -71,16 +71,16 @@ export function AddFriendForm({ onAdd }: AddFriendFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#e8e0d4] p-6 shadow-sm">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 rounded-full bg-[#fbf7ef] flex items-center justify-center text-2xl">
+    <div className="bg-white rounded-2xl border border-black/5 p-6 shadow-sm">
+      <div className="flex items-center gap-4 mb-5">
+        <div className="w-11 h-11 rounded-xl bg-neutral-50 flex items-center justify-center text-xl">
           👤
         </div>
         <div>
-          <h3 className="font-serif font-bold text-[#1f1a17]">
-            Add someone whose taste you trust
+          <h3 className="font-semibold text-[#1f1a17]">
+            Add a friend
           </h3>
-          <p className="text-sm text-[#8b7355] mt-0.5">
+          <p className="text-sm text-neutral-500 mt-0.5">
             We&apos;ll watch for their 5-star books
           </p>
         </div>
@@ -129,17 +129,17 @@ export function AddFriendForm({ onAdd }: AddFriendFormProps) {
 
         {/* Help text - collapsible */}
         {showHelp && (
-          <div className="bg-[#fbf7ef] rounded-lg p-5 text-sm animate-fadeIn border border-[#e8e0d4]">
-            <p className="font-medium text-[#1f1a17] mb-3">
+          <div className="bg-neutral-50 rounded-xl p-4 text-sm animate-fadeIn">
+            <p className="font-medium text-[#1f1a17] mb-2">
               Finding a Goodreads feed URL:
             </p>
-            <ol className="list-decimal list-inside space-y-2 text-[#5b4a3f]">
+            <ol className="list-decimal list-inside space-y-1.5 text-neutral-600">
               <li>Go to your friend&apos;s Goodreads profile</li>
               <li>Click &quot;Read&quot; under their bookshelves</li>
               <li>Look for the RSS icon at the bottom of the page</li>
               <li>Copy that URL and paste it here</li>
             </ol>
-            <p className="mt-4 text-xs text-[#8b7355]">
+            <p className="mt-3 text-xs text-neutral-400">
               Format: goodreads.com/review/list_rss/[user_id]?shelf=read
             </p>
           </div>
@@ -148,26 +148,26 @@ export function AddFriendForm({ onAdd }: AddFriendFormProps) {
         {/* Test results */}
         {testResult && (
           <div
-            className={`rounded-lg p-5 text-sm animate-fadeIn ${
+            className={`rounded-xl p-4 text-sm animate-fadeIn ${
               testResult.success
-                ? 'bg-[#4a7c59]/10 border border-[#4a7c59]/20'
-                : 'bg-[#9c3d3d]/10 border border-[#9c3d3d]/20'
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-red-50 text-red-600'
             }`}
           >
             {testResult.success ? (
               <>
-                <p className="font-medium text-[#4a7c59] mb-3">
+                <p className="font-medium mb-2">
                   ✓ Found {testResult.fiveStarItems} five-star books!
                 </p>
                 {testResult.sampleItems.filter(i => i.isFiveStar).length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-[#5b4a3f] text-xs mb-2">Recent 5-star picks:</p>
-                    <ul className="space-y-1.5">
+                  <div>
+                    <p className="text-xs text-emerald-600/70 mb-1.5">Recent 5-star picks:</p>
+                    <ul className="space-y-1">
                       {testResult.sampleItems
                         .filter(i => i.isFiveStar)
                         .slice(0, 2)
                         .map((item, i) => (
-                          <li key={i} className="text-[#5b4a3f] flex items-center gap-2">
+                          <li key={i} className="flex items-center gap-2 text-emerald-700">
                             <span className="text-[#d4a855]">★</span>
                             <span className="truncate">{item.title}</span>
                           </li>
@@ -177,7 +177,7 @@ export function AddFriendForm({ onAdd }: AddFriendFormProps) {
                 )}
               </>
             ) : (
-              <p className="text-[#9c3d3d]">
+              <p>
                 Couldn&apos;t read this feed. Check that the URL is correct.
               </p>
             )}
@@ -185,7 +185,7 @@ export function AddFriendForm({ onAdd }: AddFriendFormProps) {
         )}
 
         {error && (
-          <p className="text-sm text-[#9c3d3d] bg-[#9c3d3d]/10 rounded-lg px-4 py-3">
+          <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">
             {error}
           </p>
         )}

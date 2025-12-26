@@ -40,13 +40,13 @@ interface DemoFeedCardProps {
 function DemoFeedCard({ book, index }: DemoFeedCardProps) {
   return (
     <article
-      className="relative bg-white rounded-xl border border-[#e8e0d4] shadow-sm overflow-hidden"
+      className="relative bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden"
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {/* Demo overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/90 pointer-events-none z-10" />
       <div className="absolute bottom-4 left-0 right-0 text-center z-20">
-        <span className="inline-block px-4 py-1.5 bg-[#fbf7ef] text-[#8b7355] text-xs font-medium rounded-full border border-[#e8e0d4]">
+        <span className="inline-block px-3 py-1 bg-neutral-50 text-neutral-400 text-xs font-medium rounded-full">
           Example
         </span>
       </div>
@@ -102,9 +102,9 @@ function DemoFeedCard({ book, index }: DemoFeedCardProps) {
 
 export function DemoFeed() {
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <p className="text-sm text-[#8b7355]">
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <p className="text-sm text-neutral-400">
           Here&apos;s what your feed will look like
         </p>
       </div>

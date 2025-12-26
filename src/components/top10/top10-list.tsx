@@ -50,13 +50,13 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 p-3 bg-white border border-[var(--color-tan)] rounded-lg group"
+      className="flex items-center gap-4 p-4 bg-white border border-black/5 rounded-xl shadow-sm group hover:shadow-md transition-shadow"
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="drag-handle p-1 text-[var(--color-brown-light)] hover:text-[var(--color-brown)]"
+        className="p-1 text-neutral-300 hover:text-neutral-500 cursor-grab active:cursor-grabbing"
         aria-label="Drag to reorder"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -65,7 +65,7 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
       </button>
 
       {/* Rank */}
-      <span className="w-6 h-6 flex items-center justify-center bg-[var(--color-gold)] text-white text-sm font-bold rounded-full">
+      <span className="w-8 h-8 flex items-center justify-center bg-[#d4a855] text-white text-sm font-bold rounded-full flex-shrink-0">
         {item.rank}
       </span>
 
@@ -74,30 +74,30 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
         <img
           src={item.book.coverUrl}
           alt=""
-          className="w-10 h-14 object-cover rounded shadow-sm"
+          className="w-10 h-14 object-cover rounded shadow-sm flex-shrink-0"
         />
       ) : (
-        <div className="w-10 h-14 bg-[var(--color-parchment)] rounded flex items-center justify-center">
+        <div className="w-10 h-14 bg-neutral-100 rounded flex items-center justify-center flex-shrink-0">
           <span className="text-lg">📕</span>
         </div>
       )}
 
       {/* Book info */}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-[var(--color-brown-dark)] truncate">{item.book.title}</p>
+        <p className="font-medium text-[#1f1a17] truncate">{item.book.title}</p>
         {item.book.author && (
-          <p className="text-sm text-[var(--color-brown)] truncate">{item.book.author}</p>
+          <p className="text-sm text-neutral-500 truncate">{item.book.author}</p>
         )}
       </div>
 
       {/* Remove button */}
       <button
         onClick={() => onRemove(item.book.id)}
-        className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-red)] hover:bg-red-50 rounded transition-opacity"
+        className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-red-50 hover:text-red-500 transition-all"
         aria-label="Remove from Top 10"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
     </div>
@@ -151,25 +151,41 @@ export function Top10List({ items, onReorder, onRemove }: Top10ListProps) {
     await onRemove(bookId);
   };
 
-  if (localItems.length === 0) {
-    return (
-      <div className="text-center py-8 text-[var(--color-brown-light)]">
-        <p className="text-4xl mb-2">📚</p>
-        <p>Your Top 10 is empty</p>
-        <p className="text-sm">Add books from your feed or my books page</p>
-      </div>
-    );
-  }
+  // Calculate empty slots to show
+  const emptySlots = Array.from({ length: 10 - localItems.length }, (_, i) => localItems.length + i + 1);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={localItems.map((i) => i.book.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-2">
-          {localItems.map((item) => (
-            <SortableItem key={item.book.id} item={item} onRemove={handleRemove} />
-          ))}
-        </div>
-      </SortableContext>
-    </DndContext>
+    <div className="space-y-6">
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={localItems.map((i) => i.book.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {localItems.map((item) => (
+              <SortableItem key={item.book.id} item={item} onRemove={handleRemove} />
+            ))}
+
+            {/* Empty slots */}
+            {emptySlots.map((rank) => (
+              <div
+                key={rank}
+                className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-neutral-200"
+              >
+                <div className="w-5" /> {/* Spacer for drag handle alignment */}
+                <span className="w-8 h-8 flex items-center justify-center bg-neutral-100 text-neutral-400 text-sm font-medium rounded-full">
+                  {rank}
+                </span>
+                <div className="flex-1">
+                  <p className="text-neutral-300">—</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {/* Helper text */}
+      <p className="text-center text-sm text-neutral-400">
+        Drag books to reorder your ranking.
+      </p>
+    </div>
   );
 }

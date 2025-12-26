@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const navItems = [
   { href: '/feed', label: 'Feed', icon: '📚' },
   { href: '/my-books', label: 'My Books', icon: '📖' },
+  { href: '/reflections', label: 'Reflections', icon: '💭' },
   { href: '/top10', label: 'Top 10', icon: '🏆' },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
@@ -14,9 +15,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex w-56 min-h-screen bg-[#fbf7ef] border-r border-[#e8e0d4] flex-col">
+    <aside className="hidden lg:flex w-56 min-h-screen bg-[#faf8f5] border-r border-black/5 flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-[#e8e0d4]">
+      <div className="p-6 border-b border-black/5">
         <Link href="/feed" className="flex items-center gap-3 no-underline group">
           <span className="text-2xl group-hover:scale-110 transition-transform">📚</span>
           <h1 className="text-lg font-bold text-[#1f1a17] font-serif">
@@ -34,10 +35,10 @@ export function Sidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg no-underline transition-all text-[15px] leading-6 ${
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl no-underline transition-all text-sm ${
                     isActive
-                      ? 'bg-white/80 text-[#1f1a17] font-semibold shadow-sm border border-black/5'
-                      : 'text-[#5b4a3f] hover:bg-white/50 hover:text-[#1f1a17]'
+                      ? 'bg-white text-[#1f1a17] font-medium shadow-sm'
+                      : 'text-neutral-500 hover:bg-white/50 hover:text-[#1f1a17]'
                   }`}
                 >
                   <span className={`text-lg ${isActive ? '' : 'opacity-70'}`}>{item.icon}</span>
@@ -50,9 +51,9 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom decoration */}
-      <div className="p-6 border-t border-[#e8e0d4]">
-        <p className="text-xs text-[#8b7355] text-center">
-          Your reading companion
+      <div className="p-6 border-t border-black/5">
+        <p className="text-xs text-neutral-400 text-center">
+          Made with care
         </p>
       </div>
     </aside>
@@ -64,7 +65,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#e8e0d4] z-50 safe-area-inset-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-black/5 z-50 safe-area-inset-bottom">
       <ul className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -75,7 +76,7 @@ export function MobileNav() {
                 className={`flex flex-col items-center gap-1 px-4 py-2 no-underline transition-colors ${
                   isActive
                     ? 'text-[#1f1a17]'
-                    : 'text-[#8b7355]'
+                    : 'text-neutral-400'
                 }`}
               >
                 <span className="text-xl">{item.icon}</span>

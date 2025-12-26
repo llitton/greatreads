@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Top10List } from '@/components/top10/top10-list';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Link from 'next/link';
 
 interface TopTenItem {
   id: string;
@@ -29,6 +30,13 @@ interface AvailableBook {
   author: string | null;
   coverUrl: string | null;
 }
+
+// Static preview data for empty state
+const previewBooks = [
+  { rank: 1, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman' },
+  { rank: 2, title: 'The Art of Happiness', author: 'Dalai Lama' },
+  { rank: 3, title: 'White Fragility', author: 'Robin DiAngelo' },
+];
 
 export default function Top10Page() {
   const [topTen, setTopTen] = useState<TopTen | null>(null);
@@ -164,41 +172,92 @@ export default function Top10Page() {
   };
 
   const shareUrl = topTen ? `${window.location.origin}/u/${topTen.id}/top10` : '';
+  const hasBooks = topTen && topTen.items.length > 0;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin text-4xl">🏆</div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin text-4xl mb-4">🏆</div>
+          <p className="text-neutral-500">Loading your list...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif font-bold text-[var(--color-brown-dark)]">
-          My Top 10 Books
-        </h1>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setShowRequestForm(true)}>
-            Ask a Friend
-          </Button>
-          <Button onClick={() => setShowAddBook(true)}>+ Add Book</Button>
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Hero section */}
+      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-10">
+        <div className="max-w-2xl">
+          {/* Header */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-[#1f1a17] text-white text-2xl flex items-center justify-center flex-shrink-0">
+              🏆
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-[#1f1a17] mb-1">
+                Mark&apos;s Top 10 Books
+              </h1>
+              <p className="text-[15px] text-neutral-500">
+                The books that shaped how you think.
+              </p>
+            </div>
+          </div>
+
+          {/* Explanation */}
+          <p className="text-[15px] leading-relaxed text-neutral-600 mb-8">
+            Your Top 10 is a ranked list of the books that mattered most to you.
+            You can reorder them anytime and share your list with friends.
+          </p>
+
+          {/* Actions */}
+          {!hasBooks ? (
+            <div className="space-y-4">
+              <Button onClick={() => setShowAddBook(true)} className="w-full sm:w-auto">
+                Add your first book
+              </Button>
+              <div className="flex items-center gap-4 text-sm">
+                <button
+                  onClick={() => setShowRequestForm(true)}
+                  className="text-neutral-500 hover:text-[#1f1a17] transition-colors"
+                >
+                  Ask a friend
+                </button>
+                <span className="text-neutral-300">·</span>
+                <Link
+                  href="/my-books"
+                  className="text-neutral-500 hover:text-[#1f1a17] transition-colors"
+                >
+                  Browse My Books
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => setShowAddBook(true)}>
+                + Add Book
+              </Button>
+              <Button variant="secondary" onClick={() => setShowRequestForm(true)}>
+                Ask a friend
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Share link */}
-      {topTen && topTen.items.length > 0 && (
-        <div className="card p-4 mb-6 bg-[var(--color-parchment)]">
-          <p className="text-sm font-medium text-[var(--color-brown-dark)] mb-2">
-            Share your Top 10:
+      {/* Share link - only when has books */}
+      {hasBooks && (
+        <div className="bg-neutral-50 rounded-2xl p-5">
+          <p className="text-sm font-medium text-[#1f1a17] mb-2">
+            Share your Top 10
           </p>
           <div className="flex gap-2">
             <input
               type="text"
               readOnly
               value={shareUrl}
-              className="input text-sm flex-1"
+              className="flex-1 px-4 py-2 text-sm bg-white border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
             <Button
@@ -215,30 +274,122 @@ export default function Top10Page() {
         </div>
       )}
 
-      {/* Top 10 list */}
-      {topTen && (
-        <Top10List items={topTen.items} onReorder={handleReorder} onRemove={handleRemove} />
+      {/* List or Preview */}
+      {hasBooks ? (
+        <Top10List items={topTen!.items} onReorder={handleReorder} onRemove={handleRemove} />
+      ) : (
+        /* Static preview for empty state */
+        <div className="space-y-6">
+          <div className="space-y-2">
+            {/* Show preview books */}
+            {previewBooks.map((book) => (
+              <div
+                key={book.rank}
+                className="flex items-center gap-4 p-4 bg-white rounded-xl border border-black/5 shadow-sm opacity-60"
+              >
+                <span className="w-8 h-8 flex items-center justify-center bg-[#d4a855] text-white text-sm font-bold rounded-full">
+                  {book.rank}
+                </span>
+                <div className="w-10 h-14 bg-neutral-100 rounded flex items-center justify-center">
+                  <span className="text-lg">📕</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-[#1f1a17] truncate">{book.title}</p>
+                  <p className="text-sm text-neutral-500 truncate">{book.author}</p>
+                </div>
+              </div>
+            ))}
+
+            {/* Empty slots */}
+            {[4, 5, 6, 7, 8, 9, 10].map((rank) => (
+              <div
+                key={rank}
+                className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-neutral-200"
+              >
+                <span className="w-8 h-8 flex items-center justify-center bg-neutral-100 text-neutral-400 text-sm font-medium rounded-full">
+                  {rank}
+                </span>
+                <div className="flex-1">
+                  <p className="text-neutral-300">—</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Helper text */}
+          <p className="text-center text-sm text-neutral-400">
+            Drag books to reorder once you add them.
+          </p>
+        </div>
       )}
+
+      {/* Sent requests */}
+      {requests.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-[#1f1a17]">
+            Sent Requests
+          </h2>
+          <div className="space-y-2">
+            {requests.map((req) => (
+              <div key={req.id} className="bg-white rounded-xl border border-black/5 shadow-sm p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-[#1f1a17]">{req.toEmail}</p>
+                  <p className="text-sm text-neutral-400">
+                    Sent {new Date(req.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 text-xs font-medium rounded-full ${
+                    req.status === 'RESPONDED'
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : req.status === 'VIEWED'
+                        ? 'bg-amber-50 text-amber-600'
+                        : 'bg-neutral-100 text-neutral-500'
+                  }`}
+                >
+                  {req.status.toLowerCase()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Closing line */}
+      <p className="text-center text-sm text-neutral-300 italic pt-4">
+        This list changes as you do.
+      </p>
 
       {/* Add book modal */}
       {showAddBook && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="card p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-serif font-bold text-[var(--color-brown-dark)]">
-                Add to Top 10
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-[#1f1a17]">
+                Add to your Top 10
               </h2>
               <button
                 onClick={() => setShowAddBook(false)}
-                className="text-[var(--color-brown-light)] hover:text-[var(--color-brown)]"
+                className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
               >
-                ✕
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 1l12 12M13 1L1 13" />
+                </svg>
               </button>
             </div>
             {availableBooks.length === 0 ? (
-              <p className="text-[var(--color-brown)]">
-                No books available. Add some books from your feed first!
-              </p>
+              <div className="text-center py-8">
+                <p className="text-4xl mb-3">📚</p>
+                <p className="text-neutral-600 mb-4">
+                  No books available yet.
+                </p>
+                <Link
+                  href="/my-books"
+                  className="text-sm font-medium text-[#1f1a17] hover:underline"
+                >
+                  Add some books first →
+                </Link>
+              </div>
             ) : (
               <div className="space-y-2">
                 {availableBooks
@@ -247,21 +398,21 @@ export default function Top10Page() {
                     <button
                       key={book.id}
                       onClick={() => handleAddBook(book.id)}
-                      className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-[var(--color-parchment)] transition-colors"
+                      className="w-full flex items-center gap-3 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
                     >
                       {book.coverUrl ? (
-                        <img src={book.coverUrl} alt="" className="w-10 h-14 object-cover rounded" />
+                        <img src={book.coverUrl} alt="" className="w-10 h-14 object-cover rounded shadow-sm" />
                       ) : (
-                        <div className="w-10 h-14 bg-[var(--color-parchment)] rounded flex items-center justify-center">
+                        <div className="w-10 h-14 bg-neutral-100 rounded flex items-center justify-center">
                           📕
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="font-medium text-[var(--color-brown-dark)] truncate">
+                        <p className="font-medium text-[#1f1a17] truncate">
                           {book.title}
                         </p>
                         {book.author && (
-                          <p className="text-sm text-[var(--color-brown)] truncate">{book.author}</p>
+                          <p className="text-sm text-neutral-500 truncate">{book.author}</p>
                         )}
                       </div>
                     </button>
@@ -275,21 +426,28 @@ export default function Top10Page() {
       {/* Request form modal */}
       {showRequestForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="card p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-serif font-bold text-[var(--color-brown-dark)]">
-                Ask for a Friend&apos;s Top 10
-              </h2>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-semibold text-[#1f1a17]">
+                  Ask a friend
+                </h2>
+                <p className="text-sm text-neutral-500 mt-0.5">
+                  &quot;What&apos;s in your Top 10?&quot;
+                </p>
+              </div>
               <button
                 onClick={() => setShowRequestForm(false)}
-                className="text-[var(--color-brown-light)] hover:text-[var(--color-brown)]"
+                className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
               >
-                ✕
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 1l12 12M13 1L1 13" />
+                </svg>
               </button>
             </div>
             <div className="space-y-4">
               <Input
-                label="Their Email"
+                label="Their email"
                 type="email"
                 value={requestEmail}
                 onChange={(e) => setRequestEmail(e.target.value)}
@@ -297,19 +455,20 @@ export default function Top10Page() {
                 required
               />
               <Input
-                label="Their Name (optional)"
+                label="Their name (optional)"
                 value={requestName}
                 onChange={(e) => setRequestName(e.target.value)}
                 placeholder="Jane"
               />
               <div>
-                <label className="block text-sm font-medium text-[var(--color-brown-dark)] mb-1.5">
+                <label className="block text-sm font-medium text-[#1f1a17] mb-1.5">
                   Message (optional)
                 </label>
                 <textarea
                   value={requestMessage}
                   onChange={(e) => setRequestMessage(e.target.value)}
-                  className="input min-h-[80px]"
+                  className="w-full px-4 py-3 text-sm bg-white border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
+                  rows={3}
                   placeholder="Hey! I'd love to know your top 10 favorite books..."
                 />
               </div>
@@ -317,38 +476,6 @@ export default function Top10Page() {
                 Send Request
               </Button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sent requests */}
-      {requests.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-lg font-serif font-bold text-[var(--color-brown-dark)] mb-4">
-            Sent Requests
-          </h2>
-          <div className="space-y-2">
-            {requests.map((req) => (
-              <div key={req.id} className="card p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-[var(--color-brown-dark)]">{req.toEmail}</p>
-                  <p className="text-sm text-[var(--color-brown-light)]">
-                    Sent {new Date(req.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <span
-                  className={`badge ${
-                    req.status === 'RESPONDED'
-                      ? 'badge-success'
-                      : req.status === 'VIEWED'
-                        ? 'badge-warning'
-                        : ''
-                  }`}
-                >
-                  {req.status}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
       )}
