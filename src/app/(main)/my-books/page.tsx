@@ -145,11 +145,11 @@ export default function MyBooksPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-[#1f1a17] mb-1">
+        <h1 className="text-2xl font-semibold text-[#1f1a17] mb-2">
           My Books
         </h1>
         <p className="text-[15px] text-neutral-500">
-          Everything you&apos;ve read, want to read, and loved.
+          What you&apos;ve read and what&apos;s next.
         </p>
       </div>
 
@@ -315,12 +315,12 @@ export default function MyBooksPage() {
 
       {/* Link to reflections */}
       {books.filter(b => b.status === 'READ' && b.userRating === 5).length > 0 && (
-        <div className="text-center pt-4">
+        <div className="text-center pt-6">
           <Link
             href="/reflections"
-            className="text-sm text-neutral-500 hover:text-[#1f1a17] transition-colors"
+            className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
           >
-            View your reflections →
+            See books that stayed →
           </Link>
         </div>
       )}

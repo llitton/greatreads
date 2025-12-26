@@ -174,8 +174,7 @@ export default function FeedPage() {
               </h1>
 
               <p className="text-[17px] leading-8 text-neutral-600 mb-6">
-                A quiet place for the books that actually mattered to people you trust.
-                When someone you respect loves a book, it shows up here.
+                A quiet place to discover books through people you trust.
               </p>
 
               <p className="text-sm text-neutral-400 italic">
@@ -242,8 +241,8 @@ export default function FeedPage() {
           </h2>
           <p className="text-[15px] text-neutral-500 leading-relaxed max-w-lg">
             {hasNoSources
-              ? 'Only books that someone you trust rated 5 stars. Nothing else.'
-              : '5-star picks from people whose taste you trust.'}
+              ? 'Only books someone you trust loved.'
+              : 'Books someone you trust loved.'}
           </p>
         </div>
 
@@ -252,7 +251,7 @@ export default function FeedPage() {
           <div className="mb-10 max-w-lg">
             <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-6">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="font-semibold text-[#1f1a17]">Add someone whose taste you trust</h3>
+                <h3 className="font-semibold text-[#1f1a17]">Add a friend</h3>
                 <button
                   onClick={() => setShowAddFriend(false)}
                   className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
@@ -327,7 +326,7 @@ export default function FeedPage() {
               {!showAddFriend && (
                 <div className="text-center py-6">
                   <Button onClick={() => setShowAddFriend(true)} size="lg">
-                    Add someone whose taste you trust
+                    Add someone you trust
                   </Button>
                 </div>
               )}
