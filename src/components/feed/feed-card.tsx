@@ -11,6 +11,7 @@ interface FeedCardProps {
     eventDate: string | null;
     reviewText: string | null;
     eventUrl: string | null;
+    rating?: number; // 4 or 5, depending on why it's shown
     book: {
       id: string;
       title: string;
@@ -36,6 +37,10 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
       setLoading(false);
     }
   };
+
+  // Determine the rating to display (default to 5)
+  const rating = event.rating || 5;
+  const lovedVerb = rating === 5 ? 'loved' : 'highly rated';
 
   return (
     <article className="bg-white rounded-2xl border border-black/5 shadow-sm hover:shadow-md transition-shadow animate-fadeIn overflow-hidden">
@@ -72,10 +77,15 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
                     <p className="text-[15px] text-[#5b4a3f] mt-1">by {event.book.author}</p>
                   )}
                 </div>
-                {/* 5 stars */}
+                {/* Stars based on actual rating */}
                 <div className="flex-shrink-0 flex items-center gap-0.5">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <span key={star} className="text-[#d4a855] text-sm">★</span>
+                    <span
+                      key={star}
+                      className={`text-sm ${star <= rating ? 'text-[#d4a855]' : 'text-neutral-200'}`}
+                    >
+                      ★
+                    </span>
                   ))}
                 </div>
               </div>
@@ -84,7 +94,7 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
               <div className="flex items-center gap-2 mt-3 mb-3">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
                   <span className="text-amber-500">★</span>
-                  {event.friendName} loved this
+                  {event.friendName} {lovedVerb} this
                 </span>
                 {event.eventDate && (
                   <span className="text-xs text-neutral-400">

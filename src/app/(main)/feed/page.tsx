@@ -377,18 +377,23 @@ export default function FeedPage() {
               </div>
             </div>
           ) : (
-            /* Has sources but no events yet */
+            /* Has sources but no recent events detected */
             <div className="text-center py-16">
-              <div className="text-5xl mb-6">📭</div>
+              <div className="text-5xl mb-6">📚</div>
               <h3 className="text-xl font-semibold text-[#1f1a17] mb-3">
-                No 5-star books yet
+                Still looking
               </h3>
-              <p className="text-[15px] text-neutral-500 mb-8 max-w-sm mx-auto leading-relaxed">
-                We&apos;re watching your friends&apos; feeds. When they rate something 5 stars, it&apos;ll show up here.
+              <p className="text-[15px] text-neutral-500 mb-4 max-w-md mx-auto leading-relaxed">
+                We haven&apos;t detected any recent 5-star ratings yet. Some readers&apos; favorites go back years.
               </p>
-              <Button onClick={() => setShowAddFriend(true)} variant="secondary">
-                Add another friend
-              </Button>
+              <p className="text-sm text-neutral-400 mb-8 max-w-sm mx-auto leading-relaxed italic">
+                The best books don&apos;t always announce themselves loudly.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button onClick={() => setShowAddFriend(true)} variant="secondary">
+                  Add another friend
+                </Button>
+              </div>
             </div>
           )}
         </div>

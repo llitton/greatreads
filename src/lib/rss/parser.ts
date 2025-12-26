@@ -145,6 +145,36 @@ export function isFiveStarEvent(item: RSSItem): boolean {
   return rating === 5;
 }
 
+// Expanded definition: a book is "loved" if any of these are true:
+// - Rated 5 stars
+// - Rated 4+ stars AND has a review
+// - Shelved as "favorites"
+export function isLovedEvent(item: RSSItem): boolean {
+  const rating = detectRating(item);
+  const anyItem = item as Record<string, unknown>;
+
+  // 5 stars always counts
+  if (rating === 5) {
+    return true;
+  }
+
+  // 4 stars with a meaningful review counts
+  if (rating === 4) {
+    const reviewText = extractReviewText(item);
+    if (reviewText && reviewText.length > 30) {
+      return true;
+    }
+  }
+
+  // Check for favorites shelf
+  const shelves = String(anyItem.userShelves || '').toLowerCase();
+  if (shelves.includes('favorite') || shelves.includes('favourites') || shelves.includes('loved')) {
+    return true;
+  }
+
+  return false;
+}
+
 export function extractBookInfo(item: RSSItem): { title: string; author: string | null } {
   const anyItem = item as Record<string, unknown>;
 
@@ -349,19 +379,20 @@ export async function fetchAndParseRSS(
     const newEtag = response.headers.get('etag');
     const newLastModified = response.headers.get('last-modified');
 
-    // Filter and parse 5-star events
-    const fiveStarEvents: ParsedFiveStarEvent[] = [];
+    // Filter and parse loved events (5-star, 4-star with review, favorites)
+    const lovedEvents: ParsedFiveStarEvent[] = [];
 
     for (const item of feed.items) {
-      if (isFiveStarEvent(item)) {
+      if (isLovedEvent(item)) {
         const bookInfo = extractBookInfo(item);
+        const rating = detectRating(item) || 5; // Default to 5 for favorites shelf
 
-        fiveStarEvents.push({
+        lovedEvents.push({
           externalGuid: generateStableGuid(rssUrl, item),
           bookTitle: bookInfo.title,
           bookAuthor: bookInfo.author,
           friendName: extractFriendName(item, friendLabel),
-          rating: 5,
+          rating,
           reviewText: extractReviewText(item),
           eventUrl: item.link || null,
           eventDate: extractEventDate(item),
@@ -373,7 +404,7 @@ export async function fetchAndParseRSS(
     }
 
     return {
-      items: fiveStarEvents,
+      items: lovedEvents,
       etag: newEtag,
       lastModified: newLastModified,
       notModified: false,
@@ -424,15 +455,16 @@ export async function testRSSFeed(
         author: bookInfo.author,
         rating,
         isFiveStar: rating === 5,
+        isLoved: isLovedEvent(item),
       };
     });
 
-    const fiveStarCount = feed.items.filter((item) => isFiveStarEvent(item)).length;
+    const lovedCount = feed.items.filter((item) => isLovedEvent(item)).length;
 
     return {
       success: true,
       totalItems: feed.items.length,
-      fiveStarItems: fiveStarCount,
+      fiveStarItems: lovedCount, // Now counts all "loved" books
       sampleItems,
     };
   } catch (error) {
