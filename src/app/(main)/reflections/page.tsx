@@ -97,30 +97,60 @@ export default function ReflectionsPage() {
 
       {/* Content */}
       {books.length === 0 ? (
-        /* Empty state */
-        <section>
-          <div className="bg-[#faf8f5] rounded-3xl py-16 px-10 text-center max-w-xl mx-auto">
-            <div className="text-5xl mb-8">📚</div>
+        /* Empty state - reflective, not placeholder */
+        <section className="space-y-12">
+          {/* Empty reflection card template - shows what goes here */}
+          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-8 max-w-lg mx-auto">
+            <div className="flex gap-5">
+              {/* Faint cover placeholder */}
+              <div className="w-16 h-24 bg-neutral-100/80 rounded-lg border border-neutral-200/50 flex-shrink-0" />
 
-            <h2 className="text-xl font-semibold text-[#1f1a17] mb-4">
-              This is where lasting books live
-            </h2>
+              <div className="flex-1">
+                <div className="h-4 w-32 bg-neutral-100 rounded mb-2" />
+                <div className="h-3 w-20 bg-neutral-50 rounded mb-6" />
 
-            <p className="text-[15px] leading-7 text-neutral-600 mb-8 max-w-sm mx-auto">
-              Some books don&apos;t matter until years later.
-              <br />
-              This is a place to leave a note for your future self.
-            </p>
-
-            <Link href="/my-books">
-              <Button variant="secondary">
-                Go to My Books
-              </Button>
-            </Link>
+                <div className="bg-neutral-50 rounded-xl px-4 py-3">
+                  <p className="text-xs font-medium text-neutral-300 uppercase tracking-wide mb-2">
+                    Why it mattered
+                  </p>
+                  <p className="text-sm text-neutral-300 italic">
+                    &ldquo;...&rdquo;
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <p className="text-center text-sm text-neutral-300 mt-12 italic">
-            The best ones take time to understand.
+          {/* How this works - mental model */}
+          <div className="max-w-md mx-auto text-center">
+            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+              How this page is meant to be used
+            </p>
+            <div className="space-y-4 text-[15px] text-neutral-500 leading-relaxed">
+              <p>Add a book that still lingers</p>
+              <p>Write a sentence you&apos;d want to reread years later</p>
+              <p>Come back when your thinking changes</p>
+            </div>
+          </div>
+
+          {/* CTAs */}
+          <div className="text-center space-y-4">
+            <Button onClick={() => {/* TODO: Add book that stayed */}}>
+              Add a book that stayed with you
+            </Button>
+            <div>
+              <Link
+                href="/my-books"
+                className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
+              >
+                Browse my books
+              </Link>
+            </div>
+          </div>
+
+          {/* Quiet emotional anchor */}
+          <p className="text-center text-sm text-neutral-300 italic pt-8">
+            This page isn&apos;t meant to be finished.
           </p>
         </section>
       ) : (

@@ -141,60 +141,96 @@ export default function MyBooksPage() {
     );
   }
 
+  const isEmpty = books.length === 0;
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      {/* Header - personal framing */}
+      <header className="mb-10">
         <h1 className="text-2xl font-semibold text-[#1f1a17] mb-2">
           My Books
         </h1>
-        <p className="text-[15px] text-neutral-500">
-          What you&apos;ve read and what&apos;s next.
+        <p className="text-[17px] text-neutral-500 leading-relaxed">
+          A place for the books you&apos;ve chosen to keep.
         </p>
-      </div>
+      </header>
 
-      {/* Gentle insights */}
-      <ReadingInsights books={books} />
+      {/* Gentle insights - only when there are books */}
+      {!isEmpty && <ReadingInsights books={books} />}
 
-      {/* Filter tabs */}
-      <div className="flex gap-2">
-        {[
-          { value: 'all', label: 'All' },
-          { value: 'WANT_TO_READ', label: 'Want to Read' },
-          { value: 'READING', label: 'Reading' },
-          { value: 'READ', label: 'Read' },
-        ].map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value as typeof filter)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              filter === f.value
-                ? 'bg-[#1f1a17] text-white'
-                : 'bg-white text-neutral-600 border border-black/5 hover:border-neutral-300'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      {/* Filter tabs - contextual */}
+      {!isEmpty ? (
+        <div className="flex gap-2 mb-8">
+          {[
+            { value: 'all', label: 'All' },
+            { value: 'WANT_TO_READ', label: 'Want to Read' },
+            { value: 'READING', label: 'Reading' },
+            { value: 'READ', label: 'Read' },
+          ].map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value as typeof filter)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                filter === f.value
+                  ? 'bg-[#1f1a17] text-white'
+                  : 'bg-white text-neutral-600 border border-black/5 hover:border-neutral-300'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-neutral-300 mb-8">
+          Filters appear once you add books.
+        </p>
+      )}
 
-      {/* Books list */}
-      {filteredBooks.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-10 text-center">
-          <div className="text-4xl mb-4">📚</div>
-          <h2 className="font-semibold text-[#1f1a17] mb-2">
-            {filter === 'all' ? 'No books yet' : 'Nothing here yet'}
-          </h2>
-          <p className="text-[15px] text-neutral-600 mb-6">
-            {filter === 'all'
-              ? 'Check out your feed to discover books from friends.'
-              : 'Books will appear here as you organize your reading.'}
+      {/* Empty state - guided, not placeholder */}
+      {isEmpty ? (
+        <section className="space-y-12">
+          {/* Visual shelf - faint placeholders */}
+          <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl p-10">
+            <div className="flex justify-center gap-4 mb-8">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="w-16 h-24 bg-white/60 rounded-lg border border-neutral-200/50 shadow-sm"
+                  style={{ opacity: 1 - i * 0.12 }}
+                />
+              ))}
+            </div>
+
+            <div className="text-center max-w-md mx-auto">
+              <h2 className="text-xl font-semibold text-[#1f1a17] mb-3">
+                Your shelf is empty — for now
+              </h2>
+              <p className="text-[15px] text-neutral-600 leading-relaxed mb-8">
+                The books you add here are the ones you&apos;ve chosen to keep track of, return to, or recommend.
+              </p>
+
+              {/* Two clear paths */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/feed">
+                  <Button>Add from your feed</Button>
+                </Link>
+                <Button variant="secondary" onClick={() => {/* TODO: Add manual entry */}}>
+                  Add a book manually
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Subtle delight */}
+          <p className="text-center text-sm text-neutral-300 italic">
+            Most people start with one book.
           </p>
-          {filter === 'all' && (
-            <Link href="/feed">
-              <Button variant="secondary">Go to Feed</Button>
-            </Link>
-          )}
+        </section>
+      ) : filteredBooks.length === 0 ? (
+        <div className="bg-neutral-50 rounded-2xl p-10 text-center">
+          <p className="text-neutral-500">
+            No books in this category yet.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">

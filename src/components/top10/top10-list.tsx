@@ -56,8 +56,8 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
           : 'shadow-sm hover:shadow-md'
       }`}
     >
-      {/* Rank - large and subtle */}
-      <span className="w-10 h-10 flex items-center justify-center text-xl font-semibold text-neutral-300 flex-shrink-0">
+      {/* Rank - ceremonial, serif */}
+      <span className="w-10 h-10 flex items-center justify-center text-2xl font-serif text-neutral-300 flex-shrink-0">
         {item.rank}
       </span>
 
@@ -114,6 +114,20 @@ interface Top10ListProps {
   onRemove: (bookId: string) => Promise<void>;
 }
 
+// Prompts for empty slots
+const slotPrompts: Record<number, string> = {
+  1: 'Your most important book',
+  2: 'A book you reread',
+  3: 'A book you argue with',
+  4: 'A book that surprised you',
+  5: 'A book you give to people',
+  6: 'A book that changed your mind',
+  7: 'A book from your childhood',
+  8: 'A book you wish you wrote',
+  9: 'A book you think about often',
+  10: 'A book you discovered late',
+};
+
 export function Top10List({ items, onReorder, onRemove }: Top10ListProps) {
   const [localItems, setLocalItems] = useState(items);
 
@@ -167,24 +181,24 @@ export function Top10List({ items, onReorder, onRemove }: Top10ListProps) {
               <SortableItem key={item.book.id} item={item} onRemove={handleRemove} />
             ))}
 
-            {/* Empty slots - inviting, not broken */}
+            {/* Empty slots - inviting prompts */}
             {emptySlots.map((rank) => (
               <div
                 key={rank}
-                className="flex items-center gap-5 p-5 rounded-2xl bg-neutral-50/50 border border-dashed border-neutral-200/80"
+                className="flex items-center gap-5 p-5 rounded-2xl bg-neutral-50/30 border border-dashed border-neutral-200/60"
               >
-                {/* Rank */}
-                <span className="w-10 h-10 flex items-center justify-center text-xl font-semibold text-neutral-200 flex-shrink-0">
+                {/* Rank - ceremonial */}
+                <span className="w-10 h-10 flex items-center justify-center text-2xl font-serif text-neutral-200 flex-shrink-0">
                   {rank}
                 </span>
                 {/* Placeholder cover */}
-                <div className="w-14 h-20 bg-neutral-100/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-neutral-200 text-xl">+</span>
+                <div className="w-14 h-20 bg-neutral-100/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-neutral-200 text-lg">+</span>
                 </div>
-                {/* Text */}
+                {/* Prompt */}
                 <div className="flex-1">
-                  <p className="text-neutral-300 text-sm">
-                    {rank === localItems.length + 1 ? 'Add a book' : '—'}
+                  <p className="text-neutral-300 text-sm italic">
+                    {slotPrompts[rank] || '—'}
                   </p>
                 </div>
               </div>
@@ -193,10 +207,10 @@ export function Top10List({ items, onReorder, onRemove }: Top10ListProps) {
         </SortableContext>
       </DndContext>
 
-      {/* Helper text */}
+      {/* Helper text - reordering hint */}
       {localItems.length > 0 && (
-        <p className="text-center text-sm text-neutral-400">
-          Order these however feels right. You can change this anytime.
+        <p className="text-center text-sm text-neutral-400 italic">
+          Drag to reorder if one book rises above the rest over time.
         </p>
       )}
     </div>

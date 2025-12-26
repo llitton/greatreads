@@ -53,6 +53,17 @@ const previewBooks = [
   },
 ];
 
+// Prompts for empty slots - sparks memory
+const slotPrompts: Record<number, string> = {
+  4: 'A book you reread',
+  5: 'A book you argue with',
+  6: 'A book that surprised you',
+  7: 'A book you give to people',
+  8: 'A book that changed your mind',
+  9: 'A book from your childhood',
+  10: 'A book you wish you wrote',
+};
+
 export default function Top10Page() {
   const [topTen, setTopTen] = useState<TopTen | null>(null);
   const [loading, setLoading] = useState(true);
@@ -204,24 +215,23 @@ export default function Top10Page() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       {/* Header - identity, not data entry */}
       <header className="mb-12">
-        <div className="flex items-center gap-3 mb-6">
-          <span className="text-2xl">🏆</span>
-          <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
-            Your canon
-          </span>
-        </div>
+        <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+          Your canon
+        </p>
 
-        <h1 className="text-3xl font-semibold text-[#1f1a17] mb-4">
+        <h1 className="text-3xl font-serif font-semibold text-[#1f1a17] mb-4">
           Mark&apos;s Top 10
         </h1>
 
-        <p className="text-[17px] leading-relaxed text-neutral-500 max-w-lg mb-8">
-          {hasBooks
-            ? 'The books that mattered most to you.'
-            : 'These are the books that mattered most to you.'}
+        <p className="text-[17px] leading-relaxed text-neutral-500 max-w-lg mb-2">
+          The books that made you who you are.
         </p>
 
-        {/* Actions */}
+        <p className="text-sm text-neutral-400 italic mb-8">
+          Your canon can change as you do.
+        </p>
+
+        {/* Actions - evolving CTA */}
         {!hasBooks ? (
           <div className="space-y-4">
             <Button onClick={() => setShowAddBook(true)} size="lg">
@@ -231,10 +241,22 @@ export default function Top10Page() {
               There&apos;s no right order. Just your order.
             </p>
           </div>
-        ) : (
+        ) : topTen && topTen.items.length < 10 ? (
           <div className="flex flex-wrap items-center gap-4">
             <Button onClick={() => setShowAddBook(true)}>
-              Add Book
+              Continue shaping your Top 10
+            </Button>
+            <button
+              onClick={() => setShowRequestForm(true)}
+              className="text-sm text-neutral-500 hover:text-[#1f1a17] transition-colors"
+            >
+              Ask a friend for theirs
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-4">
+            <Button onClick={() => setShowAddBook(true)} variant="secondary">
+              Revisit your canon
             </Button>
             <button
               onClick={() => setShowRequestForm(true)}
@@ -308,20 +330,23 @@ export default function Top10Page() {
               </div>
             ))}
 
-            {/* Empty slots */}
+            {/* Empty slots with prompts */}
             {[4, 5, 6, 7, 8, 9, 10].map((rank) => (
               <div
                 key={rank}
-                className="flex items-center gap-5 p-5 rounded-2xl bg-neutral-50/50 border border-dashed border-neutral-200/80"
+                className="flex items-center gap-5 p-5 rounded-2xl bg-neutral-50/30 border border-dashed border-neutral-200/60"
               >
-                <span className="w-10 h-10 flex items-center justify-center text-xl font-semibold text-neutral-200 flex-shrink-0">
+                {/* Ceremonial rank number */}
+                <span className="w-10 h-10 flex items-center justify-center text-xl font-serif text-neutral-200 flex-shrink-0">
                   {rank}
                 </span>
-                <div className="w-14 h-20 bg-neutral-100/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-neutral-200 text-xl">+</span>
+                <div className="w-14 h-20 bg-neutral-100/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-neutral-200 text-lg">+</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-neutral-300 text-sm">—</p>
+                  <p className="text-neutral-300 text-sm italic">
+                    {slotPrompts[rank] || '—'}
+                  </p>
                 </div>
               </div>
             ))}
@@ -366,10 +391,10 @@ export default function Top10Page() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="mt-20 text-center">
+      {/* Footer - emotional closure */}
+      <footer className="mt-24 pt-8 border-t border-black/5 text-center">
         <p className="text-sm text-neutral-300 italic">
-          This list changes as you do.
+          These are the books you carry with you.
         </p>
       </footer>
 
