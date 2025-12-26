@@ -28,41 +28,57 @@ export default function UnderTheHoodPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
       {/* ═══════════════════════════════════════════════════════════════════
-          1. OPENING FRAMING
+          1. OPENING FRAMING - why this page exists
       ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-16">
         <h1 className="text-2xl font-semibold text-[#1f1a17] mb-4">
           How GreatReads Works
         </h1>
-        <p className="text-[15px] text-neutral-500 leading-relaxed mb-8">
+        <p className="text-[15px] text-neutral-500 leading-relaxed mb-6">
           A short explanation of what&apos;s happening behind the scenes — without the noise.
         </p>
-        <p className="text-[15px] text-neutral-600 leading-relaxed">
+        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
           GreatReads is intentionally simple on the surface.
           Underneath, it&apos;s doing a few very specific things — and not doing many others — to keep recommendations meaningful.
+        </p>
+        <p className="text-sm text-neutral-400 italic">
+          This page exists for people who like to understand systems, tradeoffs, and intent.
         </p>
       </header>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          2. WHAT COUNTS AS A STRONG SIGNAL
+          2. WHAT COUNTS AS A STRONG SIGNAL (ordered by weight)
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-16">
         <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
           What counts as a strong signal
         </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-8">
+        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
           GreatReads doesn&apos;t try to understand all reading behavior.
           It looks for a small number of signals that usually mean:
           <span className="italic"> &ldquo;This book mattered to me.&rdquo;</span>
         </p>
+        <p className="text-sm text-neutral-400 mb-8">
+          From strongest to weakest:
+        </p>
 
         <div className="space-y-6">
           <div className="flex gap-4">
-            <span className="text-lg flex-shrink-0 w-6">★</span>
+            <span className="text-lg flex-shrink-0 w-6">◆</span>
             <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">5-star ratings</p>
+              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Top 10 lists</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                When someone gives a book their highest rating, that&apos;s a strong signal of impact.
+                Explicit, intentional choices — the strongest signal of all.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <span className="text-lg flex-shrink-0 w-6">✎</span>
+            <div>
+              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Written reflections</p>
+              <p className="text-sm text-neutral-500 leading-relaxed">
+                If someone took the time to write about a book, it likely stuck with them.
               </p>
             </div>
           </div>
@@ -72,35 +88,29 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Favorites</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Some books stay important long after they&apos;re read. Favorites count even if the rating is old.
+                Books that stay important long after they&apos;re read. Count even if the rating is old.
               </p>
             </div>
           </div>
 
           <div className="flex gap-4">
-            <span className="text-lg flex-shrink-0 w-6">✎</span>
+            <span className="text-lg flex-shrink-0 w-6">★</span>
             <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Reflections or notes</p>
+              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">5-star ratings</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                If someone took the time to write about a book, it likely stuck with them.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <span className="text-lg flex-shrink-0 w-6">◆</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Top 10 lists</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                These are explicit, intentional choices — the strongest signal of all.
+                When someone gives a book their highest rating, that&apos;s a signal of impact.
               </p>
             </div>
           </div>
         </div>
+
+        <p className="text-sm text-neutral-400 italic mt-8">
+          The more effort a signal requires, the more weight it carries.
+        </p>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          3. WHAT THE APP IGNORES
+          3. WHAT THE APP IGNORES - as axioms
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-16">
         <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
@@ -117,7 +127,7 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Overall popularity</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                A book being widely liked doesn&apos;t mean you would like it.
+                Popularity measures agreement. GreatReads cares about resonance.
               </p>
             </div>
           </div>
@@ -137,7 +147,7 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Average ratings</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                A 4.2 average from 300,000 readers is less meaningful than one person you respect saying, &ldquo;This stayed with me.&rdquo;
+                Averages flatten taste. GreatReads preserves it.
               </p>
             </div>
           </div>
@@ -147,11 +157,39 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Reading speed, streaks, or goals</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                This app isn&apos;t trying to optimize reading as a habit — only as an experience.
+                This app doesn&apos;t treat reading as productivity. Only as experience.
               </p>
             </div>
           </div>
         </div>
+
+        {/* Not optimizing for callout */}
+        <div className="mt-8 bg-neutral-50 rounded-xl p-5">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
+            GreatReads is not optimized for
+          </p>
+          <p className="text-sm text-neutral-600 leading-relaxed">
+            Engagement · Daily usage · Completion · Growth loops
+          </p>
+          <p className="text-sm text-neutral-600 mt-2">
+            It&apos;s optimized for <span className="font-medium">trust</span>.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          TIME MATTERS
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="mb-16">
+        <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
+          Time matters
+        </h2>
+        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
+          GreatReads doesn&apos;t rush.
+        </p>
+        <p className="text-[15px] text-neutral-600 leading-relaxed">
+          Books can surface months or years after someone reads them — when they&apos;re still being thought about. This connects directly to the &ldquo;Books that stayed with me&rdquo; philosophy.
+        </p>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -171,6 +209,16 @@ export default function UnderTheHoodPage() {
             <li>It filters out everything else.</li>
             <li>It quietly waits for new signals over time.</li>
           </ul>
+        </div>
+
+        {/* Concrete example */}
+        <div className="bg-[#faf8f5] rounded-2xl p-6 mb-6 border border-[#f0ebe3]">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
+            Example
+          </p>
+          <p className="text-sm text-neutral-600 leading-relaxed">
+            If someone you follow reads 40 books in a year, you might see only one — or none — of them. That&apos;s intentional.
+          </p>
         </div>
 
         <div className="bg-amber-50/50 rounded-2xl p-6 border border-amber-100/50">
@@ -204,6 +252,15 @@ export default function UnderTheHoodPage() {
           — Laura
           <br />
           December 2025
+        </p>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          CLOSING LINE
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="mb-16 text-center">
+        <p className="text-[15px] text-neutral-600 leading-relaxed italic">
+          If a book shows up here, it&apos;s because it earned its place.
         </p>
       </section>
 

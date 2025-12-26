@@ -156,14 +156,17 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      {/* Page header */}
-      <header className="mb-10">
+    <div className="max-w-2xl mx-auto px-4 py-10">
+      {/* Page header - philosophy framing */}
+      <header className="mb-12">
         <h1 className="text-2xl font-semibold text-[#1f1a17] mb-2">
           Settings
         </h1>
-        <p className="text-[15px] text-neutral-500 leading-relaxed">
+        <p className="text-[17px] text-neutral-500 leading-relaxed mb-2">
           Manage how GreatReads works for you.
+        </p>
+        <p className="text-sm text-neutral-400 italic">
+          Designed to be quiet, respectful, and intentional.
         </p>
       </header>
 
@@ -175,7 +178,7 @@ export default function SettingsPage() {
               Profile
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              How your name appears to friends.
+              This is how your recommendations are credited.
             </p>
           </div>
 
@@ -192,7 +195,7 @@ export default function SettingsPage() {
                 className="w-full h-11 px-4 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 focus:border-transparent transition-all"
               />
               <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
-                This shows up in emails and when friends view your picks.
+                Shows up when friends view your picks. Identity matters because taste matters.
               </p>
             </div>
 
@@ -206,7 +209,7 @@ export default function SettingsPage() {
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
-                Used for sign-in and notifications. Contact support to change.
+                Used for sign-in and thoughtful notifications. We won&apos;t email you unless it matters.
               </p>
             </div>
           </div>
@@ -219,7 +222,7 @@ export default function SettingsPage() {
               Notifications
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              Choose how you want to hear about great books.
+              Decide how and when great books reach you.
             </p>
           </div>
 
@@ -228,7 +231,7 @@ export default function SettingsPage() {
             <ToggleRow
               id="notify-email"
               label="Email me when a friend gives a book 5 stars"
-              description="You'll get a short note with the book and who loved it."
+              description="Only when someone you trust really loved something."
               checked={notifyEmail}
               onChange={setNotifyEmail}
             />
@@ -240,7 +243,7 @@ export default function SettingsPage() {
             <ToggleRow
               id="notify-sms"
               label="Text me about new picks"
-              description="Get a text when someone you follow rates a book 5 stars."
+              description="A rare message when someone you follow finds something special."
               checked={notifySms}
               onChange={setNotifySms}
             />
@@ -286,6 +289,18 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* About GreatReads - meta section */}
+        <section className="bg-neutral-50 rounded-2xl p-6">
+          <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide mb-4">
+            About GreatReads
+          </h2>
+          <div className="space-y-2 text-sm text-neutral-600">
+            <p>Built as a personal project.</p>
+            <p>No ads. No tracking. No feeds optimized for engagement.</p>
+            <p>Your data is yours.</p>
+          </div>
+        </section>
+
         {/* Danger Zone card */}
         <section className="bg-white rounded-2xl border border-red-100 overflow-hidden">
           <div className="p-6 pb-0">
@@ -293,7 +308,7 @@ export default function SettingsPage() {
               Danger Zone
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              Irreversible actions that affect your account.
+              We don&apos;t believe in trapping people here.
             </p>
           </div>
 

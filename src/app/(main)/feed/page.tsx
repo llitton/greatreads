@@ -161,24 +161,30 @@ export default function FeedPage() {
       <WelcomeMessage />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO: Single clear moment
+          HERO: Single clear moment with gravity
       ═══════════════════════════════════════════════════════════════════ */}
       {hasNoSources && (
-        <section className="mb-20">
-          {/* Hero - one clear moment */}
-          <header className="text-center mb-16">
+        <section className="mb-24">
+          {/* Hero - artifact, not landing page */}
+          <header className="text-center mb-20">
             <h1 className="text-4xl font-semibold text-[#1f1a17] mb-4 font-serif">
               Made for Mark
             </h1>
-            <p className="text-lg text-neutral-500">
+            <p className="text-lg text-neutral-500 mb-4">
               A quiet place to discover books through people you trust.
+            </p>
+            <p className="text-xs text-neutral-300">
+              Created December 2025
             </p>
           </header>
 
-          {/* Personal shelf - elevated treatment */}
+          {/* Personal shelf - declarative, not browsable */}
           <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl p-10 shadow-sm">
-            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-8 text-center">
+            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2 text-center">
               Books that shaped how Mark thinks
+            </p>
+            <p className="text-xs text-neutral-400 text-center mb-8">
+              A short list, not a feed
             </p>
 
             {/* Shelf with covers */}
@@ -229,13 +235,18 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HOW THE FEED WORKS
+          HOW THE FEED WORKS - with visual break
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-20">
-        {/* Section header - lighter, caption-like */}
+        {/* Visual break / divider */}
+        {hasNoSources && (
+          <div className="border-t border-black/5 mb-12" />
+        )}
+
+        {/* Section header - smaller, why-focused */}
         <div className="mb-8">
-          <p className="text-sm text-neutral-400 mb-2">
-            {hasNoSources ? 'How this works' : 'Your feed'}
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
+            {hasNoSources ? 'Why books appear here' : 'Your feed'}
           </p>
           <p className="text-[17px] text-neutral-600 leading-relaxed max-w-md">
             {hasNoSources
@@ -335,14 +346,13 @@ export default function FeedPage() {
                   Visually distinct from real content
               ═══════════════════════════════════════════════════════════ */}
               <div className="bg-neutral-50/50 rounded-2xl p-8 border border-neutral-100">
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+                <div className="mb-6">
+                  <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
                     Example
-                  </span>
-                  <span className="text-xs text-neutral-300">·</span>
-                  <span className="text-xs text-neutral-400">
-                    When this starts working
-                  </span>
+                  </p>
+                  <p className="text-sm text-neutral-500">
+                    This is what it looks like when someone you trust loves a book.
+                  </p>
                 </div>
                 <div className="space-y-6 opacity-80">
                   {previewBooks.map((book) => (
@@ -426,9 +436,12 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          FOOTER - quiet signature
+          FOOTER - emotional close
       ═══════════════════════════════════════════════════════════════════ */}
-      <footer className="mt-24 pt-8 border-t border-black/5 text-center">
+      <footer className="mt-24 pt-8 border-t border-black/5 text-center space-y-2">
+        <p className="text-sm text-neutral-400">
+          Made with care.
+        </p>
         <p className="text-xs text-neutral-300 italic">
           — Laura, December 2025
         </p>
