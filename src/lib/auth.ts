@@ -4,8 +4,6 @@ import Resend from 'next-auth/providers/resend';
 import { Resend as ResendClient } from 'resend';
 import { prisma } from './prisma';
 
-console.log("RESEND_API_KEY present?", !!process.env.RESEND_API_KEY);
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -16,7 +14,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const resend = new ResendClient(process.env.RESEND_API_KEY);
 
         await resend.emails.send({
-          from: provider.from,
+          from: provider.from || 'Laura <noreply@greatreads.app>',
           to: email,
           subject: "Laura made something for you 📚",
           html: `

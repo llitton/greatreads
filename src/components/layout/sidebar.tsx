@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
 
 const navItems = [
   { href: '/feed', label: 'Feed', icon: '📚' },
@@ -13,22 +12,21 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
 
   return (
-    <aside className="w-64 min-h-screen bg-white border-r border-[var(--color-tan)] flex flex-col">
+    <aside className="hidden lg:flex w-56 min-h-screen bg-white border-r border-[var(--color-tan)] flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-[var(--color-tan)]">
-        <Link href="/feed" className="flex items-center gap-2 no-underline">
-          <span className="text-2xl">📚</span>
-          <h1 className="text-xl font-bold text-[var(--color-brown-dark)] font-serif">
+      <div className="p-5 border-b border-[var(--color-tan)]">
+        <Link href="/feed" className="flex items-center gap-2.5 no-underline group">
+          <span className="text-2xl group-hover:scale-110 transition-transform">📚</span>
+          <h1 className="text-lg font-bold text-[var(--color-brown-dark)] font-serif">
             GreatReads
           </h1>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-3">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -36,14 +34,14 @@ export function Sidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg no-underline transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg no-underline transition-all ${
                     isActive
-                      ? 'bg-[var(--color-parchment)] text-[var(--color-brown-dark)] font-medium'
+                      ? 'bg-[var(--color-brown-dark)] text-white shadow-sm'
                       : 'text-[var(--color-brown)] hover:bg-[var(--color-parchment)]'
                   }`}
                 >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
+                  <span className="text-base">{item.icon}</span>
+                  <span className="text-sm font-medium">{item.label}</span>
                 </Link>
               </li>
             );
@@ -51,25 +49,44 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* User section */}
+      {/* Bottom decoration */}
       <div className="p-4 border-t border-[var(--color-tan)]">
-        <div className="flex items-center gap-3 px-4 py-2">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-parchment)] flex items-center justify-center text-sm">
-            {session?.user?.name?.[0] || session?.user?.email?.[0] || '?'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-[var(--color-brown-dark)] truncate">
-              {session?.user?.name || session?.user?.email}
-            </p>
-          </div>
+        <div className="text-center">
+          <p className="text-xs text-[var(--color-brown-light)]">
+            Your reading companion
+          </p>
         </div>
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full mt-2 px-4 py-2 text-sm text-[var(--color-brown)] hover:bg-[var(--color-parchment)] rounded-lg transition-colors text-left"
-        >
-          Sign out
-        </button>
       </div>
     </aside>
+  );
+}
+
+// Mobile bottom nav
+export function MobileNav() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--color-tan)] z-50 safe-area-inset-bottom">
+      <ul className="flex justify-around items-center h-16">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                className={`flex flex-col items-center gap-1 px-4 py-2 no-underline transition-colors ${
+                  isActive
+                    ? 'text-[var(--color-brown-dark)]'
+                    : 'text-[var(--color-brown-light)]'
+                }`}
+              >
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-xs font-medium">{item.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
