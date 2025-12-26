@@ -28,41 +28,41 @@ export function SetupCard({
   const progress = (step1Complete ? 1 : 0) + (step2Complete ? 1 : 0);
 
   return (
-    <div className="bg-white rounded-xl border border-[var(--color-tan)] p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-serif font-bold text-[var(--color-brown-dark)]">
+    <div className="bg-white rounded-xl border border-[#e8e0d4] p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="font-serif font-bold text-[#1f1a17]">
           Get Started
         </h3>
-        <span className="text-xs font-medium text-[var(--color-brown-light)] bg-[var(--color-parchment)] px-2 py-1 rounded-full">
+        <span className="text-xs font-medium text-[#8b7355] bg-[#fbf7ef] px-3 py-1 rounded-full">
           {progress}/2
         </span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-[var(--color-parchment)] rounded-full mb-5 overflow-hidden">
+      <div className="h-2 bg-[#f5f0e6] rounded-full mb-6 overflow-hidden">
         <div
-          className="h-full bg-[var(--color-green)] rounded-full transition-all duration-500"
+          className="h-full bg-[#4a7c59] rounded-full transition-all duration-500"
           style={{ width: `${(progress / 2) * 100}%` }}
         />
       </div>
 
       {/* Steps */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {/* Step 1: Add a friend */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           <div
-            className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+            className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
               step1Complete
-                ? 'bg-[var(--color-green)] text-white'
-                : 'bg-[var(--color-parchment)] text-[var(--color-brown)]'
+                ? 'bg-[#4a7c59] text-white'
+                : 'bg-[#f5f0e6] text-[#5b4a3f]'
             }`}
           >
             {step1Complete ? '✓' : '1'}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 pt-0.5">
             <p
-              className={`text-sm font-medium ${
-                step1Complete ? 'text-[var(--color-green)]' : 'text-[var(--color-brown-dark)]'
+              className={`text-[15px] font-medium ${
+                step1Complete ? 'text-[#4a7c59]' : 'text-[#1f1a17]'
               }`}
             >
               Add someone whose taste you trust
@@ -70,13 +70,13 @@ export function SetupCard({
             {!step1Complete && (
               <button
                 onClick={onAddFriend}
-                className="mt-2 text-sm text-[var(--color-brown-dark)] underline underline-offset-2 hover:no-underline"
+                className="mt-2 text-sm text-[#5b4a3f] underline underline-offset-2 hover:text-[#1f1a17] transition-colors"
               >
                 Add friend&apos;s Goodreads feed
               </button>
             )}
             {step1Complete && (
-              <p className="mt-1 text-xs text-[var(--color-brown-light)]">
+              <p className="mt-1 text-sm text-[#8b7355]">
                 Following {friendsCount} {friendsCount === 1 ? 'friend' : 'friends'}
               </p>
             )}
@@ -84,41 +84,41 @@ export function SetupCard({
         </div>
 
         {/* Step 2: Notifications */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           <div
-            className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+            className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
               step2Complete
-                ? 'bg-[var(--color-green)] text-white'
-                : 'bg-[var(--color-parchment)] text-[var(--color-brown)]'
+                ? 'bg-[#4a7c59] text-white'
+                : 'bg-[#f5f0e6] text-[#5b4a3f]'
             }`}
           >
             {step2Complete ? '✓' : '2'}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 pt-0.5">
             <div className="flex items-center justify-between">
               <p
-                className={`text-sm font-medium ${
-                  step2Complete ? 'text-[var(--color-green)]' : 'text-[var(--color-brown-dark)]'
+                className={`text-[15px] font-medium ${
+                  step2Complete ? 'text-[#4a7c59]' : 'text-[#1f1a17]'
                 }`}
               >
                 Get notified about new picks
               </p>
               <button
                 onClick={handleToggle}
-                className={`relative w-10 h-5 rounded-full transition-colors ${
-                  notifications ? 'bg-[var(--color-green)]' : 'bg-[var(--color-tan)]'
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  notifications ? 'bg-[#4a7c59]' : 'bg-[#e8e0d4]'
                 }`}
                 role="switch"
                 aria-checked={notifications}
               >
                 <span
-                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
                     notifications ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
                 />
               </button>
             </div>
-            <p className="mt-1 text-xs text-[var(--color-brown-light)]">
+            <p className="mt-1 text-sm text-[#8b7355]">
               Email me when there&apos;s a new 5-star
             </p>
           </div>

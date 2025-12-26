@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import { FeedCard } from '@/components/feed/feed-card';
 import { AddFriendForm } from '@/components/feed/add-friend-form';
 import { WelcomeModule } from '@/components/feed/welcome-module';
 import { SetupCard } from '@/components/feed/setup-card';
 import { DemoFeed } from '@/components/feed/demo-feed-card';
+import { MarksShelf } from '@/components/feed/marks-shelf';
 import { Button } from '@/components/ui/button';
 
 interface FeedEvent {
@@ -34,15 +34,11 @@ interface FriendSource {
 }
 
 export default function FeedPage() {
-  const { data: session } = useSession();
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [sources, setSources] = useState<FriendSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [showAddFriend, setShowAddFriend] = useState(false);
-
-  // Get user's first name for personalization
-  const userName = session?.user?.name?.split(' ')[0] || undefined;
 
   const fetchFeed = useCallback(async () => {
     try {
@@ -112,15 +108,14 @@ export default function FeedPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin text-4xl mb-3">📚</div>
-          <p className="text-[var(--color-brown)]">Loading your feed...</p>
+          <div className="animate-spin text-4xl mb-4">📚</div>
+          <p className="text-[#5b4a3f]">Loading your feed...</p>
         </div>
       </div>
     );
   }
 
   const hasNoSources = sources.length === 0;
-  const hasNoEvents = events.length === 0;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -131,18 +126,20 @@ export default function FeedPage() {
           {/* Welcome module - shows when no sources */}
           {hasNoSources && (
             <WelcomeModule
-              userName={userName}
               onSetupClick={() => setShowAddFriend(true)}
             />
           )}
 
+          {/* Mark's Shelf - always visible */}
+          <MarksShelf />
+
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl lg:text-3xl font-serif font-bold text-[var(--color-brown-dark)] mb-2">
+          <div className="mb-8">
+            <h1 className="text-2xl lg:text-3xl font-serif font-bold text-[#1f1a17] mb-2">
               {hasNoSources ? 'Your next great read' : 'Books your friends loved'}
             </h1>
             {!hasNoSources && (
-              <p className="text-[var(--color-brown)]">
+              <p className="text-[#5b4a3f] text-[15px]">
                 5-star picks from people you trust
               </p>
             )}
@@ -150,14 +147,14 @@ export default function FeedPage() {
 
           {/* Add friend form (modal-style) */}
           {showAddFriend && (
-            <div className="mb-6 animate-fadeIn">
+            <div className="mb-8 animate-fadeIn">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-serif font-bold text-[var(--color-brown-dark)]">
+                <h2 className="text-lg font-serif font-bold text-[#1f1a17]">
                   Add a friend
                 </h2>
                 <button
                   onClick={() => setShowAddFriend(false)}
-                  className="text-[var(--color-brown-light)] hover:text-[var(--color-brown-dark)]"
+                  className="text-[#8b7355] hover:text-[#1f1a17] transition-colors"
                 >
                   Cancel
                 </button>
@@ -168,18 +165,18 @@ export default function FeedPage() {
 
           {/* Friend sources - compact pills */}
           {sources.length > 0 && !showAddFriend && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-[var(--color-brown-light)]">Following:</span>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm text-[#8b7355]">Following:</span>
                 {sources.map((source) => (
                   <span
                     key={source.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white rounded-full text-sm border border-[var(--color-tan)] shadow-sm"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-sm border border-[#e8e0d4] shadow-sm"
                   >
-                    <span className="font-medium text-[var(--color-brown-dark)]">{source.label}</span>
+                    <span className="font-medium text-[#1f1a17]">{source.label}</span>
                     <button
                       onClick={() => handleDeleteSource(source.id)}
-                      className="text-[var(--color-brown-light)] hover:text-[var(--color-red)] transition-colors"
+                      className="text-[#8b7355] hover:text-[#9c3d3d] transition-colors"
                       title="Remove"
                     >
                       ×
@@ -188,7 +185,7 @@ export default function FeedPage() {
                 ))}
                 <button
                   onClick={() => setShowAddFriend(true)}
-                  className="text-sm text-[var(--color-brown)] hover:text-[var(--color-brown-dark)] underline underline-offset-2"
+                  className="text-sm text-[#5b4a3f] hover:text-[#1f1a17] underline underline-offset-2 transition-colors"
                 >
                   + Add more
                 </button>
@@ -198,15 +195,15 @@ export default function FeedPage() {
 
           {/* Filter tabs */}
           {events.length > 0 && (
-            <div className="flex gap-2 mb-6">
+            <div className="flex gap-3 mb-8">
               {(['all', 'unread', 'read'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
                     filter === f
-                      ? 'bg-[var(--color-brown-dark)] text-white shadow-sm'
-                      : 'bg-white text-[var(--color-brown)] border border-[var(--color-tan)] hover:border-[var(--color-brown-light)]'
+                      ? 'bg-[#1f1a17] text-white shadow-sm'
+                      : 'bg-white text-[#5b4a3f] border border-[#e8e0d4] hover:border-[#c4b8a8] hover:text-[#1f1a17]'
                   }`}
                 >
                   {f === 'all' ? 'All' : f === 'unread' ? 'Unread' : 'Already Read'}
@@ -217,24 +214,40 @@ export default function FeedPage() {
 
           {/* Feed content */}
           {events.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {events.map((event) => (
                 <FeedCard key={event.id} event={event} onUpdateStatus={handleUpdateStatus} />
               ))}
             </div>
           ) : hasNoSources ? (
             /* Empty state with demo feed */
-            <div className="mt-4">
+            <div className="mt-6">
+              <div className="bg-white rounded-xl border border-[#e8e0d4] p-8 mb-6 text-center shadow-sm">
+                <h3 className="font-serif font-bold text-[#1f1a17] text-lg mb-2">
+                  Start with your favorites
+                </h3>
+                <p className="text-[#5b4a3f] mb-6 text-[15px]">
+                  Add Mark&apos;s favorite books to your list, or connect a friend to see their picks.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button variant="secondary">
+                    Add these to My Books
+                  </Button>
+                  <Button onClick={() => setShowAddFriend(true)}>
+                    Add a friend
+                  </Button>
+                </div>
+              </div>
               <DemoFeed />
             </div>
           ) : (
             /* Has sources but no events yet */
-            <div className="bg-white rounded-xl border border-[var(--color-tan)] p-8 text-center shadow-sm">
+            <div className="bg-white rounded-xl border border-[#e8e0d4] p-8 text-center shadow-sm">
               <div className="text-4xl mb-4">📭</div>
-              <h3 className="font-serif font-bold text-[var(--color-brown-dark)] mb-2">
+              <h3 className="font-serif font-bold text-[#1f1a17] mb-2">
                 No 5-star books yet
               </h3>
-              <p className="text-[var(--color-brown)] mb-4">
+              <p className="text-[#5b4a3f] mb-6 text-[15px]">
                 We&apos;re watching your friends&apos; feeds. When they rate something 5 stars, it&apos;ll show up here.
               </p>
               <Button onClick={() => setShowAddFriend(true)} variant="secondary">
@@ -245,7 +258,7 @@ export default function FeedPage() {
         </div>
 
         {/* Right sidebar - setup & Top 10 teaser */}
-        <div className="w-full lg:w-72 flex-shrink-0 space-y-6">
+        <div className="w-full lg:w-80 flex-shrink-0 space-y-6">
           {/* Setup card */}
           <SetupCard
             friendsCount={sources.length}
@@ -253,19 +266,19 @@ export default function FeedPage() {
           />
 
           {/* Top 10 teaser */}
-          <div className="bg-white rounded-xl border border-[var(--color-tan)] p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-white rounded-xl border border-[#e8e0d4] p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
               <span className="text-xl">🏆</span>
-              <h3 className="font-serif font-bold text-[var(--color-brown-dark)]">
-                {userName ? `${userName}'s Top 10` : 'Your Top 10'}
+              <h3 className="font-serif font-bold text-[#1f1a17]">
+                Mark&apos;s Top 10
               </h3>
             </div>
-            <p className="text-sm text-[var(--color-brown)] mb-4">
+            <p className="text-sm text-[#5b4a3f] mb-4 leading-relaxed">
               What are the 10 best books you&apos;ve ever read? Share your list with friends.
             </p>
             <a
               href="/top10"
-              className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-brown-dark)] hover:underline"
+              className="inline-flex items-center gap-2 text-sm font-medium text-[#1f1a17] hover:underline"
             >
               Start your list
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
@@ -276,22 +289,22 @@ export default function FeedPage() {
 
           {/* How it works - only show when no sources */}
           {hasNoSources && (
-            <div className="bg-[var(--color-parchment)] rounded-xl p-5">
-              <h3 className="font-serif font-bold text-[var(--color-brown-dark)] mb-3">
+            <div className="bg-[#fbf7ef] rounded-xl p-6 border border-[#e8e0d4]">
+              <h3 className="font-serif font-bold text-[#1f1a17] mb-4">
                 How it works
               </h3>
-              <ol className="space-y-3 text-sm text-[var(--color-brown)]">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-brown-dark)] text-white text-xs flex items-center justify-center">1</span>
-                  <span>Add friends from Goodreads</span>
+              <ol className="space-y-4 text-sm text-[#5b4a3f]">
+                <li className="flex gap-4">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1f1a17] text-white text-xs flex items-center justify-center font-medium">1</span>
+                  <span className="pt-0.5">Add friends from Goodreads</span>
                 </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-brown-dark)] text-white text-xs flex items-center justify-center">2</span>
-                  <span>We watch for their 5-star ratings</span>
+                <li className="flex gap-4">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1f1a17] text-white text-xs flex items-center justify-center font-medium">2</span>
+                  <span className="pt-0.5">We watch for their 5-star ratings</span>
                 </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-brown-dark)] text-white text-xs flex items-center justify-center">3</span>
-                  <span>Great books show up in your feed</span>
+                <li className="flex gap-4">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#1f1a17] text-white text-xs flex items-center justify-center font-medium">3</span>
+                  <span className="pt-0.5">Great books show up in your feed</span>
                 </li>
               </ol>
             </div>
