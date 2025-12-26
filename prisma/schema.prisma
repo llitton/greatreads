@@ -69,13 +69,16 @@ model User {
   topTens              TopTen[]
   topTenRequestsSent   TopTenRequest[]       @relation("RequestsSent")
   notifications        NotificationLog[]
+  goodreadsImports     GoodreadsImport[]
 }
 
 model FriendSource {
   id             String    @id @default(cuid())
   userId         String
   label          String // Friend's name
-  rssUrl         String    @db.Text
+  rssUrl         String?   @db.Text // Optional now - not needed for import-based sources
+  sourceUserId   String?   // Link to the actual user account (for import-based sources)
+  sourceType     String    @default("rss") // 'rss' or 'import'
   lastFetchedAt  DateTime?
   lastEtag       String?
   lastModified   String?
@@ -83,22 +86,26 @@ model FriendSource {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  events FriendFiveStarEvent[]
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events     FriendFiveStarEvent[]
 
   @@index([userId])
   @@index([active])
+  @@index([sourceUserId])
 }
 
 model Book {
-  id              String  @id @default(cuid())
-  title           String
-  author          String?
-  goodreadsBookUrl String? @db.Text
-  coverUrl        String? @db.Text
-  isbn            String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String
+  author           String?
+  goodreadsBookId  String?  // Goodreads book ID for deduplication
+  goodreadsBookUrl String?  @db.Text
+  coverUrl         String?  @db.Text
+  isbn             String?
+  isbn13           String?
+  yearPublished    Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   events           FriendFiveStarEvent[]
   userBookStatuses UserBookStatus[]
@@ -106,6 +113,8 @@ model Book {
 
   @@index([title])
   @@index([isbn])
+  @@index([isbn13])
+  @@index([goodreadsBookId])
 }
 
 model FriendFiveStarEvent {
@@ -145,6 +154,11 @@ model UserBookStatus {
   status     BookStatus
   userRating Int?       // 1-5
   userNotes  String?    @db.Text
+  isFavorite Boolean    @default(false) // From Goodreads "favorites" shelf
+  isPublic   Boolean    @default(true)  // Whether 5-star rating is visible to followers
+  dateRead   DateTime?  // Original read date from Goodreads
+  readCount  Int        @default(1)     // Number of times read
+  importedAt DateTime?  // When this was imported (null = manually added)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
@@ -154,6 +168,8 @@ model UserBookStatus {
   @@unique([userId, bookId])
   @@index([userId])
   @@index([bookId])
+  @@index([userRating])
+  @@index([isFavorite])
 }
 
 model TopTen {
@@ -233,4 +249,21 @@ model CronLog {
   notificationsSent Int   @default(0)
   errors         Json?
   duration       Int?     // milliseconds
+}
+
+// Track Goodreads CSV imports
+model GoodreadsImport {
+  id               String   @id @default(cuid())
+  userId           String
+  totalBooks       Int      @default(0)
+  fiveStarBooks    Int      @default(0)
+  favorites        Int      @default(0)
+  booksAdded       Int      @default(0)
+  booksSkipped     Int      @default(0)
+  booksFailed      Int      @default(0)
+  importedAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

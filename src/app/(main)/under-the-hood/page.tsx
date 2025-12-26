@@ -202,33 +202,39 @@ export default function UnderTheHoodPage() {
 
         <div className="bg-neutral-50/50 rounded-2xl p-6 mb-6">
           <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-            When you follow someone:
+            GreatReads doesn&apos;t guess what mattered to you.
+          </p>
+          <p className="text-[15px] text-neutral-600 leading-relaxed">
+            If you&apos;ve already taken the time to rate books elsewhere, you can bring that history with you — but only with your permission.
+          </p>
+        </div>
+
+        {/* Import as engine */}
+        <div className="bg-[#faf8f5] rounded-2xl p-6 mb-6 border border-[#f0ebe3]">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
+            Import is the engine
           </p>
           <ul className="space-y-2 text-sm text-neutral-500 ml-4">
-            <li>GreatReads looks at their strongest signals — favorites, 5-stars, reflections.</li>
-            <li>It filters out everything else.</li>
-            <li>It quietly waits for new signals over time.</li>
+            <li>Export your Goodreads library as a CSV</li>
+            <li>Import it into GreatReads</li>
+            <li>Your 5-stars become visible to friends (if you choose)</li>
+            <li>Your favorites populate &ldquo;Stayed With Me&rdquo;</li>
           </ul>
+          <div className="mt-4">
+            <a href="/import" className="text-sm text-[#1f1a17] hover:underline">
+              Import your library →
+            </a>
+          </div>
         </div>
 
         {/* Concrete example */}
-        <div className="bg-[#faf8f5] rounded-2xl p-6 mb-6 border border-[#f0ebe3]">
+        <div className="bg-neutral-50/50 rounded-2xl p-6 border border-neutral-100">
           <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
             Example
           </p>
           <p className="text-sm text-neutral-600 leading-relaxed">
-            If someone you follow reads 40 books in a year, you might see only one — or none — of them. That&apos;s intentional.
+            If someone you follow has read 40 books, you might see only one — or none — of them. That&apos;s intentional. Only the books that earned strong signals appear.
           </p>
-        </div>
-
-        <div className="bg-amber-50/50 rounded-2xl p-6 border border-amber-100/50">
-          <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-            If nothing appears yet, that usually means one of two things:
-          </p>
-          <ul className="space-y-2 text-sm text-neutral-500 ml-4">
-            <li>Their favorite books are older, and still being surfaced</li>
-            <li>They haven&apos;t marked many books as &ldquo;loved&rdquo; yet</li>
-          </ul>
         </div>
       </section>
 

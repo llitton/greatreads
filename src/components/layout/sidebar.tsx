@@ -12,6 +12,7 @@ const navItems = [
 ];
 
 const secondaryItems = [
+  { href: '/import', label: 'Import', icon: '↑' },
   { href: '/under-the-hood', label: 'How It Works', icon: '◇' },
 ];
 

@@ -203,27 +203,27 @@ export default function MyBooksPage() {
 
             <div className="text-center max-w-md mx-auto">
               <h2 className="text-xl font-semibold text-[#1f1a17] mb-3">
-                Your shelf is empty — for now
+                Start with what you&apos;ve already read
               </h2>
               <p className="text-[15px] text-neutral-600 leading-relaxed mb-8">
-                The books you add here are the ones you&apos;ve chosen to keep track of, return to, or recommend.
+                Import your Goodreads library to instantly populate your shelves, ratings, and strongest signals.
               </p>
 
               {/* Two clear paths */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/feed">
-                  <Button>Add from your feed</Button>
+                <Link href="/import">
+                  <Button>Import Goodreads CSV</Button>
                 </Link>
-                <Button variant="secondary" onClick={() => {/* TODO: Add manual entry */}}>
-                  Add a book manually
-                </Button>
+                <Link href="/feed">
+                  <Button variant="secondary">Add from your feed</Button>
+                </Link>
               </div>
             </div>
           </div>
 
           {/* Subtle delight */}
           <p className="text-center text-sm text-neutral-300 italic">
-            Most people start with one book.
+            Your reading history, ready in minutes.
           </p>
         </section>
       ) : filteredBooks.length === 0 ? (

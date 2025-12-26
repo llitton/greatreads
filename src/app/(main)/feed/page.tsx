@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { FeedCard } from '@/components/feed/feed-card';
-import { AddFriendForm } from '@/components/feed/add-friend-form';
 import { Button } from '@/components/ui/button';
 import { WelcomeMessage } from '@/components/welcome-message';
 import Link from 'next/link';
@@ -26,9 +25,8 @@ interface FeedEvent {
 interface FriendSource {
   id: string;
   label: string;
-  rssUrl: string;
+  sourceType: 'rss' | 'import';
   active: boolean;
-  lastFetchedAt: string | null;
 }
 
 // Mark's favorite books with Open Library covers
@@ -76,7 +74,6 @@ export default function FeedPage() {
   const [sources, setSources] = useState<FriendSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [showAddFriend, setShowAddFriend] = useState(false);
 
   const fetchFeed = useCallback(async () => {
     try {
@@ -106,22 +103,6 @@ export default function FeedPage() {
     };
     loadData();
   }, [fetchFeed]);
-
-  const handleAddFriend = async (label: string, rssUrl: string) => {
-    const res = await fetch('/api/rss/sources', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ label, rssUrl }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error || 'Failed to add friend');
-    }
-
-    await fetchSources();
-    setShowAddFriend(false);
-  };
 
   const handleUpdateStatus = async (bookId: string, status: 'WANT_TO_READ' | 'READ') => {
     await fetch('/api/books/status', {
@@ -255,26 +236,8 @@ export default function FeedPage() {
           </p>
         </div>
 
-        {/* Add friend form */}
-        {showAddFriend && (
-          <div className="mb-10 max-w-lg">
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-semibold text-[#1f1a17]">Add a friend</h3>
-                <button
-                  onClick={() => setShowAddFriend(false)}
-                  className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-              <AddFriendForm onAdd={handleAddFriend} />
-            </div>
-          </div>
-        )}
-
         {/* Friend sources - quiet pills */}
-        {sources.length > 0 && !showAddFriend && (
+        {sources.length > 0 && (
           <div className="mb-10">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm text-neutral-400">Following:</span>
@@ -292,12 +255,6 @@ export default function FeedPage() {
                   </button>
                 </span>
               ))}
-              <button
-                onClick={() => setShowAddFriend(true)}
-                className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
-              >
-                + Add more
-              </button>
             </div>
           </div>
         )}
@@ -330,16 +287,25 @@ export default function FeedPage() {
               ))}
             </div>
           ) : hasNoSources ? (
-            /* Empty state - focused CTA */
+            /* Empty state - focused on Import */
             <div className="space-y-16">
-              {/* Primary CTA */}
-              {!showAddFriend && (
-                <div className="py-4">
-                  <Button onClick={() => setShowAddFriend(true)} size="lg">
-                    Add someone you trust
-                  </Button>
+              {/* Import CTA - primary path */}
+              <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-8">
+                <h3 className="text-lg font-semibold text-[#1f1a17] mb-2">
+                  Bring in your Goodreads history
+                </h3>
+                <p className="text-[15px] text-neutral-500 leading-relaxed mb-6">
+                  GreatReads doesn&apos;t guess what mattered. If you&apos;ve already rated books elsewhere, you can import that history with your permission.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link href="/import">
+                    <Button size="lg">Import Goodreads CSV</Button>
+                  </Link>
+                  <Link href="/import">
+                    <Button variant="secondary" size="lg">How to export from Goodreads</Button>
+                  </Link>
                 </div>
-              )}
+              </div>
 
               {/* ═══════════════════════════════════════════════════════════
                   PREVIEW: When this starts working
@@ -392,22 +358,22 @@ export default function FeedPage() {
               </div>
             </div>
           ) : (
-            /* Has sources but no recent events detected */
+            /* Has sources but no events yet */
             <div className="text-center py-16">
               <div className="text-5xl mb-6">📚</div>
               <h3 className="text-xl font-semibold text-[#1f1a17] mb-3">
-                Still looking
+                No signal yet
               </h3>
               <p className="text-[15px] text-neutral-500 mb-4 max-w-md mx-auto leading-relaxed">
-                We haven&apos;t detected any recent 5-star ratings yet. Some readers&apos; favorites go back years.
+                GreatReads only shows 5-stars (or favorites, if they choose). Ask your friends to import their Goodreads history.
               </p>
               <p className="text-sm text-neutral-400 mb-8 max-w-sm mx-auto leading-relaxed italic">
                 The best books don&apos;t always announce themselves loudly.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button onClick={() => setShowAddFriend(true)} variant="secondary">
-                  Add another friend
-                </Button>
+                <Link href="/import">
+                  <Button>Import your own library</Button>
+                </Link>
               </div>
             </div>
           )}

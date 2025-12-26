@@ -42,6 +42,20 @@ async function findOrCreateBook(event: {
 }
 
 export async function GET(request: NextRequest) {
+  // RSS polling is disabled - using CSV import instead
+  // Keep this code for potential future use, but return early
+  const RSS_POLLING_ENABLED = false;
+
+  if (!RSS_POLLING_ENABLED) {
+    return NextResponse.json({
+      success: true,
+      message: 'RSS polling is disabled. Use CSV import instead.',
+      sourcesPolled: 0,
+      newEventsFound: 0,
+      notificationsSent: 0,
+    });
+  }
+
   const startTime = Date.now();
   const errors: Array<{ sourceId: string; error: string }> = [];
   let sourcesPolled = 0;
@@ -77,6 +91,11 @@ export async function GET(request: NextRequest) {
 
     for (const source of sources) {
       try {
+        // Skip sources without RSS URL (import-based sources)
+        if (!source.rssUrl) {
+          continue;
+        }
+
         sourcesPolled++;
 
         const result = await fetchAndParseRSS(
