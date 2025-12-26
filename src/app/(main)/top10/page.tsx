@@ -31,11 +31,26 @@ interface AvailableBook {
   coverUrl: string | null;
 }
 
-// Static preview data for empty state
+// Preview books with real covers from Open Library
 const previewBooks = [
-  { rank: 1, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman' },
-  { rank: 2, title: 'The Art of Happiness', author: 'Dalai Lama' },
-  { rank: 3, title: 'White Fragility', author: 'Robin DiAngelo' },
+  {
+    rank: 1,
+    title: 'Thinking, Fast and Slow',
+    author: 'Daniel Kahneman',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780374533557-M.jpg',
+  },
+  {
+    rank: 2,
+    title: 'The Art of Happiness',
+    author: 'Dalai Lama',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9781573221115-M.jpg',
+  },
+  {
+    rank: 3,
+    title: 'White Fragility',
+    author: 'Robin DiAngelo',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780807047415-M.jpg',
+  },
 ];
 
 export default function Top10Page() {
@@ -186,78 +201,63 @@ export default function Top10Page() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Hero section */}
-      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-10">
-        <div className="max-w-2xl">
-          {/* Header */}
-          <div className="flex items-start gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-[#1f1a17] text-white text-2xl flex items-center justify-center flex-shrink-0">
-              🏆
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-[#1f1a17] mb-1">
-                Mark&apos;s Top 10 Books
-              </h1>
-              <p className="text-[15px] text-neutral-500">
-                The books that shaped how you think.
-              </p>
-            </div>
-          </div>
-
-          {/* Explanation */}
-          <p className="text-[15px] leading-relaxed text-neutral-600 mb-8">
-            Your Top 10 is a ranked list of the books that mattered most to you.
-            You can reorder them anytime and share your list with friends.
-          </p>
-
-          {/* Actions */}
-          {!hasBooks ? (
-            <div className="space-y-4">
-              <Button onClick={() => setShowAddBook(true)} className="w-full sm:w-auto">
-                Add your first book
-              </Button>
-              <div className="flex items-center gap-4 text-sm">
-                <button
-                  onClick={() => setShowRequestForm(true)}
-                  className="text-neutral-500 hover:text-[#1f1a17] transition-colors"
-                >
-                  Ask a friend
-                </button>
-                <span className="text-neutral-300">·</span>
-                <Link
-                  href="/my-books"
-                  className="text-neutral-500 hover:text-[#1f1a17] transition-colors"
-                >
-                  Browse My Books
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => setShowAddBook(true)}>
-                + Add Book
-              </Button>
-              <Button variant="secondary" onClick={() => setShowRequestForm(true)}>
-                Ask a friend
-              </Button>
-            </div>
-          )}
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      {/* Header - identity, not data entry */}
+      <header className="mb-12">
+        <div className="flex items-center gap-3 mb-6">
+          <span className="text-2xl">🏆</span>
+          <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+            Your canon
+          </span>
         </div>
-      </div>
+
+        <h1 className="text-3xl font-semibold text-[#1f1a17] mb-4">
+          Mark&apos;s Top 10
+        </h1>
+
+        <p className="text-[17px] leading-relaxed text-neutral-500 max-w-lg mb-8">
+          {hasBooks
+            ? 'The books that mattered most to you.'
+            : 'These are the books that mattered most to you.'}
+        </p>
+
+        {/* Actions */}
+        {!hasBooks ? (
+          <div className="space-y-4">
+            <Button onClick={() => setShowAddBook(true)} size="lg">
+              Start your Top 10
+            </Button>
+            <p className="text-sm text-neutral-400">
+              There&apos;s no right order. Just your order.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-4">
+            <Button onClick={() => setShowAddBook(true)}>
+              Add Book
+            </Button>
+            <button
+              onClick={() => setShowRequestForm(true)}
+              className="text-sm text-neutral-500 hover:text-[#1f1a17] transition-colors"
+            >
+              Ask a friend for theirs
+            </button>
+          </div>
+        )}
+      </header>
 
       {/* Share link - only when has books */}
       {hasBooks && (
-        <div className="bg-neutral-50 rounded-2xl p-5">
-          <p className="text-sm font-medium text-[#1f1a17] mb-2">
-            Share your Top 10
+        <div className="mb-10 p-5 bg-neutral-50 rounded-2xl">
+          <p className="text-sm font-medium text-[#1f1a17] mb-3">
+            Share your list
           </p>
           <div className="flex gap-2">
             <input
               type="text"
               readOnly
               value={shareUrl}
-              className="flex-1 px-4 py-2 text-sm bg-white border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
+              className="flex-1 px-4 py-2.5 text-sm bg-white border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
             <Button
@@ -265,7 +265,6 @@ export default function Top10Page() {
               variant="secondary"
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
-                alert('Link copied!');
               }}
             >
               Copy
@@ -278,24 +277,33 @@ export default function Top10Page() {
       {hasBooks ? (
         <Top10List items={topTen!.items} onReorder={handleReorder} onRemove={handleRemove} />
       ) : (
-        /* Static preview for empty state */
-        <div className="space-y-6">
-          <div className="space-y-2">
-            {/* Show preview books */}
+        /* Preview - what this will look like */
+        <div className="space-y-8">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+            What this will look like
+          </p>
+
+          <div className="space-y-4">
+            {/* Preview books with real covers */}
             {previewBooks.map((book) => (
               <div
                 key={book.rank}
-                className="flex items-center gap-4 p-4 bg-white rounded-xl border border-black/5 shadow-sm opacity-60"
+                className="flex items-center gap-5 p-5 bg-white rounded-2xl border border-black/5 shadow-sm opacity-70"
               >
-                <span className="w-8 h-8 flex items-center justify-center bg-[#d4a855] text-white text-sm font-bold rounded-full">
+                {/* Rank */}
+                <span className="w-10 h-10 flex items-center justify-center text-xl font-semibold text-neutral-300 flex-shrink-0">
                   {book.rank}
                 </span>
-                <div className="w-10 h-14 bg-neutral-100 rounded flex items-center justify-center">
-                  <span className="text-lg">📕</span>
-                </div>
+                {/* Cover */}
+                <img
+                  src={book.coverUrl}
+                  alt=""
+                  className="w-14 h-20 object-cover rounded-lg shadow-md flex-shrink-0"
+                />
+                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[#1f1a17] truncate">{book.title}</p>
-                  <p className="text-sm text-neutral-500 truncate">{book.author}</p>
+                  <p className="font-semibold text-[#1f1a17] mb-1">{book.title}</p>
+                  <p className="text-sm text-neutral-500">{book.author}</p>
                 </div>
               </div>
             ))}
@@ -304,38 +312,41 @@ export default function Top10Page() {
             {[4, 5, 6, 7, 8, 9, 10].map((rank) => (
               <div
                 key={rank}
-                className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-neutral-200"
+                className="flex items-center gap-5 p-5 rounded-2xl bg-neutral-50/50 border border-dashed border-neutral-200/80"
               >
-                <span className="w-8 h-8 flex items-center justify-center bg-neutral-100 text-neutral-400 text-sm font-medium rounded-full">
+                <span className="w-10 h-10 flex items-center justify-center text-xl font-semibold text-neutral-200 flex-shrink-0">
                   {rank}
                 </span>
+                <div className="w-14 h-20 bg-neutral-100/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-neutral-200 text-xl">+</span>
+                </div>
                 <div className="flex-1">
-                  <p className="text-neutral-300">—</p>
+                  <p className="text-neutral-300 text-sm">—</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Helper text */}
+          {/* Encouragement */}
           <p className="text-center text-sm text-neutral-400">
-            Drag books to reorder once you add them.
+            Most people don&apos;t fill this all at once.
           </p>
         </div>
       )}
 
       {/* Sent requests */}
       {requests.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-[#1f1a17]">
-            Sent Requests
-          </h2>
-          <div className="space-y-2">
+        <div className="mt-12 space-y-4">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+            Requests sent
+          </p>
+          <div className="space-y-3">
             {requests.map((req) => (
-              <div key={req.id} className="bg-white rounded-xl border border-black/5 shadow-sm p-4 flex items-center justify-between">
+              <div key={req.id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl">
                 <div>
                   <p className="font-medium text-[#1f1a17]">{req.toEmail}</p>
                   <p className="text-sm text-neutral-400">
-                    Sent {new Date(req.createdAt).toLocaleDateString()}
+                    {new Date(req.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <span
@@ -355,14 +366,16 @@ export default function Top10Page() {
         </div>
       )}
 
-      {/* Closing line */}
-      <p className="text-center text-sm text-neutral-300 italic pt-4">
-        This list changes as you do.
-      </p>
+      {/* Footer */}
+      <footer className="mt-20 text-center">
+        <p className="text-sm text-neutral-300 italic">
+          This list changes as you do.
+        </p>
+      </footer>
 
       {/* Add book modal */}
       {showAddBook && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-[#1f1a17]">
@@ -378,41 +391,41 @@ export default function Top10Page() {
               </button>
             </div>
             {availableBooks.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-4xl mb-3">📚</p>
+              <div className="text-center py-10">
+                <p className="text-4xl mb-4">📚</p>
                 <p className="text-neutral-600 mb-4">
-                  No books available yet.
+                  No books in your library yet.
                 </p>
                 <Link
                   href="/my-books"
                   className="text-sm font-medium text-[#1f1a17] hover:underline"
                 >
-                  Add some books first →
+                  Add books first →
                 </Link>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {availableBooks
                   .filter((book) => !topTen?.items.some((item) => item.book.id === book.id))
                   .map((book) => (
                     <button
                       key={book.id}
                       onClick={() => handleAddBook(book.id)}
-                      className="w-full flex items-center gap-3 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
+                      className="w-full flex items-center gap-4 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
                     >
                       {book.coverUrl ? (
-                        <img src={book.coverUrl} alt="" className="w-10 h-14 object-cover rounded shadow-sm" />
+                        <img src={book.coverUrl} alt="" className="w-12 h-[72px] object-cover rounded-lg shadow-sm" />
                       ) : (
-                        <div className="w-10 h-14 bg-neutral-100 rounded flex items-center justify-center">
-                          📕
+                        <div className="w-12 h-[72px] bg-neutral-100 rounded-lg flex items-center justify-center">
+                          <span className="text-xl">📕</span>
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="font-medium text-[#1f1a17] truncate">
+                        <p className="font-medium text-[#1f1a17]">
                           {book.title}
                         </p>
                         {book.author && (
-                          <p className="text-sm text-neutral-500 truncate">{book.author}</p>
+                          <p className="text-sm text-neutral-500">{book.author}</p>
                         )}
                       </div>
                     </button>
@@ -425,15 +438,15 @@ export default function Top10Page() {
 
       {/* Request form modal */}
       {showRequestForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-semibold text-[#1f1a17]">
                   Ask a friend
                 </h2>
-                <p className="text-sm text-neutral-500 mt-0.5">
-                  &quot;What&apos;s in your Top 10?&quot;
+                <p className="text-sm text-neutral-500 mt-1">
+                  What&apos;s in your Top 10?
                 </p>
               </div>
               <button
@@ -461,19 +474,19 @@ export default function Top10Page() {
                 placeholder="Jane"
               />
               <div>
-                <label className="block text-sm font-medium text-[#1f1a17] mb-1.5">
+                <label className="block text-sm font-medium text-[#1f1a17] mb-2">
                   Message (optional)
                 </label>
                 <textarea
                   value={requestMessage}
                   onChange={(e) => setRequestMessage(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-white border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
+                  className="w-full px-4 py-3 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
                   rows={3}
-                  placeholder="Hey! I'd love to know your top 10 favorite books..."
+                  placeholder="I'd love to know your favorites..."
                 />
               </div>
               <Button onClick={handleSendRequest} loading={sendingRequest} className="w-full">
-                Send Request
+                Send
               </Button>
             </div>
           </div>
