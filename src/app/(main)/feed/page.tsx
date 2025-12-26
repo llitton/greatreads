@@ -37,16 +37,19 @@ const marksFavorites = [
     title: 'White Fragility',
     author: 'Robin DiAngelo',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780807047415-M.jpg',
+    why: 'Changed how I see conversations about race.',
   },
   {
     title: 'Thinking, Fast and Slow',
     author: 'Daniel Kahneman',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780374533557-M.jpg',
+    why: 'Made me question every decision I make.',
   },
   {
     title: 'The Art of Happiness',
     author: 'Dalai Lama',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9781573221115-M.jpg',
+    why: 'Simple wisdom that actually stuck.',
   },
 ];
 
@@ -158,71 +161,63 @@ export default function FeedPage() {
       <WelcomeMessage />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ACT 1: EMOTIONAL ANCHOR (HERO)
-          This should dominate — personal, intentional, calm
+          HERO: Single clear moment
       ═══════════════════════════════════════════════════════════════════ */}
       {hasNoSources && (
-        <section className="mb-16">
-          {/* Hero card - generous breathing room */}
-          <div className="bg-[#faf8f5] rounded-3xl px-10 py-12 mb-10">
-            <div className="max-w-xl">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-2xl">🎁</span>
-                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
-                  A gift for you
-                </span>
-              </div>
+        <section className="mb-20">
+          {/* Hero - one clear moment */}
+          <header className="text-center mb-16">
+            <h1 className="text-4xl font-semibold text-[#1f1a17] mb-4 font-serif">
+              Made for Mark
+            </h1>
+            <p className="text-lg text-neutral-500">
+              A quiet place to discover books through people you trust.
+            </p>
+          </header>
 
-              <h1 className="text-3xl font-semibold text-[#1f1a17] mb-4 leading-snug">
-                Made for Mark
-              </h1>
-
-              <p className="text-[17px] leading-8 text-neutral-600 mb-6">
-                A quiet place to discover books through people you trust.
-              </p>
-
-              <p className="text-sm text-neutral-400 italic">
-                — Laura, December 2025
-              </p>
-            </div>
-          </div>
-
-          {/* Mark's Favorites - its own special card */}
-          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-8">
-            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-8">
+          {/* Personal shelf - elevated treatment */}
+          <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl p-10 shadow-sm">
+            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-8 text-center">
               Books that shaped how Mark thinks
             </p>
 
-            <div className="flex gap-6">
+            {/* Shelf with covers */}
+            <div className="flex justify-center gap-8">
               {marksFavorites.map((book) => (
                 <div
                   key={book.title}
-                  className="group flex-shrink-0 transition-transform hover:-translate-y-1"
+                  className="group flex-shrink-0 text-center"
                 >
-                  {/* Real book cover */}
-                  <div className="relative">
+                  {/* Cover with hover reflection */}
+                  <div className="relative mb-4">
                     <img
                       src={book.coverUrl}
                       alt={book.title}
-                      className="w-20 h-[120px] object-cover rounded-md shadow-md transition-shadow hover:shadow-lg"
+                      className="w-24 h-36 object-cover rounded-lg shadow-lg transition-all duration-200 group-hover:shadow-xl group-hover:-translate-y-1"
                       onError={(e) => {
-                        // Fallback to placeholder on error
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         target.nextElementSibling?.classList.remove('hidden');
                       }}
                     />
-                    {/* Fallback placeholder (hidden by default) */}
-                    <div className="hidden w-20 h-[120px] bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-md shadow-md flex items-center justify-center">
-                      <span className="text-2xl">📕</span>
+                    <div className="hidden w-24 h-36 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg shadow-lg flex items-center justify-center">
+                      <span className="text-3xl">📕</span>
+                    </div>
+
+                    {/* Hover tooltip - why it mattered */}
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                      <div className="bg-[#1f1a17] text-white text-xs px-3 py-2 rounded-lg shadow-lg max-w-[160px] text-center">
+                        {book.why}
+                      </div>
                     </div>
                   </div>
-                  {/* Title and author below */}
-                  <div className="mt-3 max-w-[80px]">
-                    <p className="text-xs font-medium text-[#1f1a17] leading-tight line-clamp-2">
+
+                  {/* Title and author */}
+                  <div className="max-w-[100px] mx-auto">
+                    <p className="text-sm font-medium text-[#1f1a17] leading-tight line-clamp-2">
                       {book.title}
                     </p>
-                    <p className="text-[11px] text-neutral-400 mt-1 truncate">
+                    <p className="text-xs text-neutral-400 mt-1 truncate">
                       {book.author}
                     </p>
                   </div>
@@ -234,19 +229,18 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ACT 2: WHAT SHOWS UP HERE
-          Clear, inevitable, not instructional
+          HOW THE FEED WORKS
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        {/* Section header */}
-        <div className="mb-10">
-          <h2 className="text-xl font-semibold text-[#1f1a17] mb-3">
-            {hasNoSources ? 'What shows up here' : 'Books your friends loved'}
-          </h2>
-          <p className="text-[15px] text-neutral-500 leading-relaxed max-w-lg">
+      <section className="mb-20">
+        {/* Section header - lighter, caption-like */}
+        <div className="mb-8">
+          <p className="text-sm text-neutral-400 mb-2">
+            {hasNoSources ? 'How this works' : 'Your feed'}
+          </p>
+          <p className="text-[17px] text-neutral-600 leading-relaxed max-w-md">
             {hasNoSources
-              ? 'Only books someone you trust loved.'
-              : 'Books someone you trust loved.'}
+              ? 'Only books someone you trust loved enough to rate five stars.'
+              : 'Books your friends loved enough to rate five stars.'}
           </p>
         </div>
 
@@ -325,10 +319,11 @@ export default function FeedPage() {
               ))}
             </div>
           ) : hasNoSources ? (
-            /* Empty state with CTA */
-            <div className="space-y-12">
+            /* Empty state - focused CTA */
+            <div className="space-y-16">
+              {/* Primary CTA */}
               {!showAddFriend && (
-                <div className="text-center py-6">
+                <div className="py-4">
                   <Button onClick={() => setShowAddFriend(true)} size="lg">
                     Add someone you trust
                   </Button>
@@ -336,42 +331,48 @@ export default function FeedPage() {
               )}
 
               {/* ═══════════════════════════════════════════════════════════
-                  ACT 3: THE PROMISE (PREVIEW)
-                  What this will feel like — elevated, not placeholder-ish
+                  PREVIEW: When this starts working
+                  Visually distinct from real content
               ═══════════════════════════════════════════════════════════ */}
-              <div>
-                <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-8">
-                  What this will feel like
-                </p>
-                <div className="space-y-6">
+              <div className="bg-neutral-50/50 rounded-2xl p-8 border border-neutral-100">
+                <div className="flex items-center gap-2 mb-6">
+                  <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+                    Example
+                  </span>
+                  <span className="text-xs text-neutral-300">·</span>
+                  <span className="text-xs text-neutral-400">
+                    When this starts working
+                  </span>
+                </div>
+                <div className="space-y-6 opacity-80">
                   {previewBooks.map((book) => (
                     <div
                       key={book.title}
-                      className="flex gap-6 p-6 bg-white rounded-2xl border border-black/5 shadow-sm"
+                      className="flex gap-5 p-5 bg-white rounded-xl border border-black/5"
                     >
-                      {/* Real book cover */}
+                      {/* Book cover */}
                       <div className="flex-shrink-0">
                         <img
                           src={book.coverUrl}
                           alt={book.title}
-                          className="w-16 h-24 object-cover rounded-md shadow-sm"
+                          className="w-14 h-20 object-cover rounded-md shadow-sm"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
                             target.nextElementSibling?.classList.remove('hidden');
                           }}
                         />
-                        <div className="hidden w-16 h-24 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-md flex items-center justify-center">
-                          <span className="text-2xl">📕</span>
+                        <div className="hidden w-14 h-20 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-md flex items-center justify-center">
+                          <span className="text-xl">📕</span>
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-[#1f1a17] mb-1">{book.title}</h3>
-                        <p className="text-sm text-neutral-500 mb-4">{book.author}</p>
-                        <p className="text-[15px] text-neutral-600 italic leading-relaxed bg-neutral-50 rounded-xl px-4 py-3 mb-4">
+                        <h3 className="font-medium text-[#1f1a17] mb-0.5">{book.title}</h3>
+                        <p className="text-sm text-neutral-400 mb-3">{book.author}</p>
+                        <p className="text-sm text-neutral-500 italic leading-relaxed mb-3">
                           &ldquo;{book.quote}&rdquo;
                         </p>
-                        <p className="text-sm text-neutral-400">
+                        <p className="text-xs text-neutral-400">
                           <span className="text-amber-500">★</span> {book.friend} loved this
                         </p>
                       </div>
@@ -411,31 +412,25 @@ export default function FeedPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          QUIET SIDEBAR CONTENT (inline for mobile, could be sidebar on lg)
+          SECONDARY PATH - quiet, optional
       ═══════════════════════════════════════════════════════════════════ */}
       {hasNoSources && (
-        <aside className="max-w-md mx-auto">
-          {/* Top 10 teaser - quiet margin note */}
-          <div className="text-center py-8 border-t border-black/5">
-            <p className="text-sm text-neutral-500 leading-relaxed mb-4">
-              What are the 10 best books you&apos;ve ever read?
-            </p>
-            <Link
-              href="/top10"
-              className="inline-flex items-center gap-2 text-sm font-medium text-[#1f1a17] hover:underline"
-            >
-              Start your Top 10 →
-            </Link>
-          </div>
+        <aside className="max-w-md mx-auto text-center">
+          <Link
+            href="/top10"
+            className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
+          >
+            Or start your Top 10 →
+          </Link>
         </aside>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          QUIET FOOTER - a small delight
+          FOOTER - quiet signature
       ═══════════════════════════════════════════════════════════════════ */}
-      <footer className="mt-20 pt-8 border-t border-black/5 text-center">
-        <p className="text-xs text-neutral-300">
-          Made with care. December 2025.
+      <footer className="mt-24 pt-8 border-t border-black/5 text-center">
+        <p className="text-xs text-neutral-300 italic">
+          — Laura, December 2025
         </p>
       </footer>
     </div>
