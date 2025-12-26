@@ -30,11 +30,41 @@ interface FriendSource {
   lastFetchedAt: string | null;
 }
 
-// Mark's favorite books
+// Mark's favorite books with Open Library covers
 const marksFavorites = [
-  { title: 'White Fragility', author: 'Robin DiAngelo', coverColor: '#f5f5f5' },
-  { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', coverColor: '#1f1a17' },
-  { title: 'The Art of Happiness', author: 'Dalai Lama', coverColor: '#d4a855' },
+  {
+    title: 'White Fragility',
+    author: 'Robin DiAngelo',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780807047415-M.jpg',
+  },
+  {
+    title: 'Thinking, Fast and Slow',
+    author: 'Daniel Kahneman',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780374533557-M.jpg',
+  },
+  {
+    title: 'The Art of Happiness',
+    author: 'Dalai Lama',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9781573221115-M.jpg',
+  },
+];
+
+// Preview books for empty state
+const previewBooks = [
+  {
+    title: 'Tomorrow, and Tomorrow, and Tomorrow',
+    author: 'Gabrielle Zevin',
+    friend: 'Sarah',
+    quote: 'This one stayed with me for weeks.',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780593321201-M.jpg',
+  },
+  {
+    title: 'Project Hail Mary',
+    author: 'Andy Weir',
+    friend: 'Mike',
+    quote: "Couldn't put it down. Finished in two days.",
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780593135204-M.jpg',
+  },
 ];
 
 export default function FeedPage() {
@@ -156,34 +186,40 @@ export default function FeedPage() {
 
           {/* Mark's Favorites - its own special card */}
           <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-8">
-            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-8">
               Books that shaped how Mark thinks
             </p>
 
-            <div className="flex gap-4">
+            <div className="flex gap-6">
               {marksFavorites.map((book) => (
                 <div
                   key={book.title}
                   className="group flex-shrink-0 transition-transform hover:-translate-y-1"
                 >
-                  {/* Book cover representation */}
-                  <div
-                    className="w-16 h-24 rounded-lg shadow-md flex items-end p-2 transition-shadow hover:shadow-lg"
-                    style={{ backgroundColor: book.coverColor }}
-                  >
-                    <div
-                      className="text-[8px] font-medium leading-tight line-clamp-3"
-                      style={{ color: book.coverColor === '#1f1a17' ? '#ffffff' : '#1f1a17' }}
-                    >
-                      {book.title}
+                  {/* Real book cover */}
+                  <div className="relative">
+                    <img
+                      src={book.coverUrl}
+                      alt={book.title}
+                      className="w-20 h-[120px] object-cover rounded-md shadow-md transition-shadow hover:shadow-lg"
+                      onError={(e) => {
+                        // Fallback to placeholder on error
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                    {/* Fallback placeholder (hidden by default) */}
+                    <div className="hidden w-20 h-[120px] bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-md shadow-md flex items-center justify-center">
+                      <span className="text-2xl">📕</span>
                     </div>
                   </div>
                   {/* Title and author below */}
-                  <div className="mt-3 max-w-[64px]">
+                  <div className="mt-3 max-w-[80px]">
                     <p className="text-xs font-medium text-[#1f1a17] leading-tight line-clamp-2">
                       {book.title}
                     </p>
-                    <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
+                    <p className="text-[11px] text-neutral-400 mt-1 truncate">
                       {book.author}
                     </p>
                   </div>
@@ -301,38 +337,38 @@ export default function FeedPage() {
                   What this will feel like — elevated, not placeholder-ish
               ═══════════════════════════════════════════════════════════ */}
               <div>
-                <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+                <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-8">
                   What this will feel like
                 </p>
-                <div className="space-y-5">
-                  {[
-                    {
-                      title: 'Tomorrow, and Tomorrow, and Tomorrow',
-                      author: 'Gabrielle Zevin',
-                      friend: 'Sarah',
-                      quote: 'This one stayed with me for weeks.',
-                    },
-                    {
-                      title: 'Project Hail Mary',
-                      author: 'Andy Weir',
-                      friend: 'Mike',
-                      quote: 'Couldn\'t put it down. Finished in two days.',
-                    },
-                  ].map((book) => (
+                <div className="space-y-6">
+                  {previewBooks.map((book) => (
                     <div
                       key={book.title}
-                      className="flex gap-5 p-6 bg-white rounded-2xl border border-black/5 shadow-sm"
+                      className="flex gap-6 p-6 bg-white rounded-2xl border border-black/5 shadow-sm"
                     >
-                      <div className="w-14 h-20 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-2xl">📕</span>
+                      {/* Real book cover */}
+                      <div className="flex-shrink-0">
+                        <img
+                          src={book.coverUrl}
+                          alt={book.title}
+                          className="w-16 h-24 object-cover rounded-md shadow-sm"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="hidden w-16 h-24 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-md flex items-center justify-center">
+                          <span className="text-2xl">📕</span>
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-[#1f1a17] mb-1">{book.title}</h3>
-                        <p className="text-sm text-neutral-500 mb-3">{book.author}</p>
-                        <p className="text-sm text-neutral-500 italic bg-neutral-50 rounded-lg px-3 py-2 mb-3">
+                        <p className="text-sm text-neutral-500 mb-4">{book.author}</p>
+                        <p className="text-[15px] text-neutral-600 italic leading-relaxed bg-neutral-50 rounded-xl px-4 py-3 mb-4">
                           &ldquo;{book.quote}&rdquo;
                         </p>
-                        <p className="text-xs text-neutral-400">
+                        <p className="text-sm text-neutral-400">
                           <span className="text-amber-500">★</span> {book.friend} loved this
                         </p>
                       </div>
