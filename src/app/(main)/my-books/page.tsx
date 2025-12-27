@@ -10,6 +10,7 @@ interface UserBookStatus {
   status: 'WANT_TO_READ' | 'READING' | 'READ';
   userRating: number | null;
   userNotes: string | null;
+  sourcePersonName: string | null;
   updatedAt: string;
   book: {
     id: string;
@@ -19,28 +20,23 @@ interface UserBookStatus {
   };
 }
 
-// Gentle insights component
-function ReadingInsights({ books }: { books: UserBookStatus[] }) {
+// Signal summary component
+function SignalSummary({ books }: { books: UserBookStatus[] }) {
   const insights = useMemo(() => {
-    const read = books.filter(b => b.status === 'READ');
     const fiveStars = books.filter(b => b.userRating === 5);
-    const wantToRead = books.filter(b => b.status === 'WANT_TO_READ');
 
-    // Find most common author among 5-star books
-    const authorCounts: Record<string, number> = {};
-    fiveStars.forEach(b => {
-      if (b.book.author) {
-        authorCounts[b.book.author] = (authorCounts[b.book.author] || 0) + 1;
-      }
+    // Group by source person
+    const sourceCounts: Record<string, number> = {};
+    books.forEach(b => {
+      const source = b.sourcePersonName || 'Unknown';
+      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
     });
-    const topAuthor = Object.entries(authorCounts)
-      .sort((a, b) => b[1] - a[1])[0];
+    const sources = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]);
 
     return {
-      readCount: read.length,
+      total: books.length,
       fiveStarCount: fiveStars.length,
-      wantToReadCount: wantToRead.length,
-      favoriteAuthor: topAuthor ? topAuthor[0] : null,
+      sources,
     };
   }, [books]);
 
@@ -49,25 +45,27 @@ function ReadingInsights({ books }: { books: UserBookStatus[] }) {
   return (
     <div className="bg-neutral-50 rounded-2xl p-5 mb-8">
       <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
-        Your reading life
+        Signals from people you trust
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div>
-          <p className="text-2xl font-semibold text-[#1f1a17]">{insights.readCount}</p>
-          <p className="text-sm text-neutral-500">books read</p>
-        </div>
+      <div className="flex flex-wrap gap-6">
         <div>
           <p className="text-2xl font-semibold text-[#d4a855]">{insights.fiveStarCount}</p>
-          <p className="text-sm text-neutral-500">five-star</p>
+          <p className="text-sm text-neutral-500">five-star books</p>
         </div>
         <div>
-          <p className="text-2xl font-semibold text-[#1f1a17]">{insights.wantToReadCount}</p>
-          <p className="text-sm text-neutral-500">to read</p>
+          <p className="text-2xl font-semibold text-[#1f1a17]">{insights.total}</p>
+          <p className="text-sm text-neutral-500">total signals</p>
         </div>
-        {insights.favoriteAuthor && (
-          <div className="col-span-2 sm:col-span-1">
-            <p className="text-sm font-medium text-[#1f1a17] truncate">{insights.favoriteAuthor}</p>
-            <p className="text-sm text-neutral-500">favorite author</p>
+        {insights.sources.length > 0 && (
+          <div className="flex-1">
+            <div className="flex flex-wrap gap-2">
+              {insights.sources.map(([name, count]) => (
+                <span key={name} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white rounded-full text-sm border border-black/5">
+                  <span className="font-medium text-[#1f1a17]">{name}</span>
+                  <span className="text-neutral-400">{count}</span>
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -145,18 +143,18 @@ export default function MyBooksPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      {/* Header - personal framing */}
+      {/* Header - trust network framing */}
       <header className="mb-10">
         <h1 className="text-2xl font-semibold text-[#1f1a17] mb-2">
-          My Books
+          Books from People You Trust
         </h1>
         <p className="text-[17px] text-neutral-500 leading-relaxed">
-          A place for the books you&apos;ve chosen to keep.
+          Only the strongest signals. Nothing else.
         </p>
       </header>
 
-      {/* Gentle insights - only when there are books */}
-      {!isEmpty && <ReadingInsights books={books} />}
+      {/* Signal summary - only when there are books */}
+      {!isEmpty && <SignalSummary books={books} />}
 
       {/* Filter tabs - contextual */}
       {!isEmpty ? (
@@ -259,23 +257,16 @@ export default function MyBooksPage() {
                     <p className="text-sm text-neutral-500">{item.book.author}</p>
                   )}
 
-                  {/* Status badge */}
-                  <div className="mt-2">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        item.status === 'READ'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : item.status === 'READING'
-                            ? 'bg-amber-50 text-amber-600'
-                            : 'bg-neutral-100 text-neutral-600'
-                      }`}
-                    >
-                      {item.status === 'READ'
-                        ? '✓ Read'
-                        : item.status === 'READING'
-                          ? '📖 Reading'
-                          : '📌 Want to Read'}
-                    </span>
+                  {/* Source person + rating */}
+                  <div className="mt-2 flex items-center gap-3 flex-wrap">
+                    {item.sourcePersonName && (
+                      <span className="text-xs text-neutral-400">
+                        from <span className="font-medium text-neutral-600">{item.sourcePersonName}</span>
+                      </span>
+                    )}
+                    {item.userRating === 5 && (
+                      <span className="text-xs text-amber-500">★ 5-star</span>
+                    )}
                   </div>
 
                   {/* Edit mode */}

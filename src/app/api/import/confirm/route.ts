@@ -9,6 +9,7 @@ interface ImportRequest {
   importShelves: boolean;
   importNotes: boolean;
   visibility: 'friends' | 'private';
+  sourcePersonName?: string; // Who these books came from (e.g., "Laura")
   preview: ImportPreview;
 }
 
@@ -97,6 +98,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Create user book status
+        // sourcePersonName: who this book came from (defaults to logged-in user's name)
+        const sourceName = options.sourcePersonName || session.user.name || 'Unknown';
+
         await prisma.userBookStatus.create({
           data: {
             userId: session.user.id,
@@ -109,6 +113,7 @@ export async function POST(request: NextRequest) {
             dateRead: parsedBook.dateRead ? new Date(parsedBook.dateRead) : null,
             readCount: parsedBook.readCount,
             importedAt,
+            sourcePersonName: sourceName,
           },
         });
 
