@@ -154,8 +154,11 @@ export default function FeedPage() {
               <p className="text-base font-semibold text-[#1f1a17] tracking-wide mb-2">
                 Personal canon
               </p>
-              <p className="text-sm text-neutral-400">
+              <p className="text-sm text-neutral-400 mb-3">
                 A short list. Not a feed.
+              </p>
+              <p className="text-xs text-neutral-300 italic">
+                Says more than a feed ever could.
               </p>
             </div>
 
@@ -207,23 +210,29 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          WHAT THIS PLACE IS - principle, not documentation
+          WHAT THIS PLACE IS - one clear sentence, then principle
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-24">
-        {/* Section header - principle-forward */}
+        {/* Section header - mission statement */}
         <div className="mb-12">
-          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
-            {hasNoSources ? 'What this place is' : 'Your feed'}
-          </p>
-          <p className="text-[17px] text-neutral-600 leading-relaxed max-w-md">
-            {hasNoSources
-              ? 'Only books someone you trust loved enough to give five stars.'
-              : 'Books your friends loved enough to rate five stars.'}
-          </p>
-          {hasNoSources && (
-            <p className="text-sm text-neutral-400 mt-3 italic">
-              Nothing popular. Nothing trending. Nothing algorithmic.
-            </p>
+          {hasNoSources ? (
+            <>
+              <p className="text-[17px] text-neutral-600 leading-relaxed max-w-lg mb-3">
+                A small, intentional list of books recommended by people you trust — only when a book truly mattered to them.
+              </p>
+              <p className="text-sm text-neutral-400 italic">
+                Nothing popular. Nothing trending. Nothing algorithmic.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
+                Your feed
+              </p>
+              <p className="text-[17px] text-neutral-600 leading-relaxed max-w-md">
+                Books your friends loved enough to rate five stars.
+              </p>
+            </>
           )}
         </div>
 
@@ -280,17 +289,17 @@ export default function FeedPage() {
           ) : hasNoSources ? (
             /* Empty state - focused on Import */
             <div className="space-y-20">
-              {/* Import invitation - softer container, human first */}
+              {/* Import invitation - human, not technical */}
               <div className="bg-[#fdfcfa] rounded-3xl border border-[#f0ebe3] p-10">
                 <h3 className="text-xl font-semibold text-[#1f1a17] mb-3">
-                  Bring in your Goodreads history
+                  Import books that mattered to you
                 </h3>
-                <p className="text-[15px] text-neutral-500 leading-relaxed mb-8 max-w-md">
-                  GreatReads doesn&apos;t guess what mattered. If you&apos;ve already rated books elsewhere, you can import that history with your permission.
+                <p className="text-[15px] text-neutral-500 leading-relaxed mb-6 max-w-md">
+                  GreatReads doesn&apos;t guess what mattered. If you&apos;ve already taken the time to rate books elsewhere, you can bring that history with you — on your terms.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 items-start">
                   <Link href="/import">
-                    <Button size="lg">Bring my reading history</Button>
+                    <Button size="lg">Bring your reading history</Button>
                   </Link>
                   <Link
                     href="/import"
@@ -299,14 +308,21 @@ export default function FeedPage() {
                     How to export from Goodreads →
                   </Link>
                 </div>
+                {/* Clarify who this is for */}
+                <p className="text-xs text-neutral-300 mt-6 italic">
+                  Usually done by the person sharing their recommendations.
+                </p>
               </div>
 
               {/* ═══════════════════════════════════════════════════════════
-                  PREVIEW: Single example, clearly framed
+                  PREVIEW: Single example, clearly framed as future state
               ═══════════════════════════════════════════════════════════ */}
               <div>
-                <p className="text-xs font-medium text-neutral-300 uppercase tracking-wide mb-4">
-                  What this will look like
+                <p className="text-xs font-medium text-neutral-300 uppercase tracking-wide mb-2">
+                  When someone you trust adds a book
+                </p>
+                <p className="text-xs text-neutral-400 mb-4">
+                  It shows up like this:
                 </p>
                 <div className="bg-neutral-50/70 rounded-2xl p-6 border border-neutral-100/80">
                   <div className="flex gap-5 p-5 bg-white rounded-xl border border-black/5 opacity-90">
