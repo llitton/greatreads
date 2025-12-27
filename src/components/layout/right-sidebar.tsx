@@ -7,7 +7,8 @@ interface IncomingBook {
   title: string;
   author: string | null;
   coverUrl: string | null;
-  friendName: string;
+  sourceName: string;
+  eventType: 'added' | 'rated' | 'reviewed';
   rating: number | null;
   reviewText: string | null;
   addedAt: string;
@@ -20,7 +21,8 @@ const placeholderBooks: IncomingBook[] = [
     title: 'Tomorrow, and Tomorrow, and Tomorrow',
     author: 'Gabrielle Zevin',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780593321201-M.jpg',
-    friendName: 'Laura',
+    sourceName: 'Laura',
+    eventType: 'reviewed',
     rating: 5,
     reviewText: 'Just finished — this stayed with me.',
     addedAt: new Date().toISOString(),
@@ -30,10 +32,22 @@ const placeholderBooks: IncomingBook[] = [
     title: 'The Bee Sting',
     author: 'Paul Murray',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780374600303-M.jpg',
-    friendName: 'Laura',
+    sourceName: 'Sarah',
+    eventType: 'rated',
+    rating: 5,
+    reviewText: null,
+    addedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: '3',
+    title: 'Demon Copperhead',
+    author: 'Barbara Kingsolver',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780063251922-M.jpg',
+    sourceName: 'Laura',
+    eventType: 'added',
     rating: null,
     reviewText: null,
-    addedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    addedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
@@ -68,12 +82,18 @@ export function RightSidebar() {
     return `${days} days ago`;
   };
 
+  const formatEventLabel = (book: IncomingBook) => {
+    if (book.eventType === 'reviewed') return 'Wrote a note';
+    if (book.eventType === 'rated' && book.rating) return `Rated ${book.rating}★`;
+    return 'Added';
+  };
+
   return (
     <div className="p-5 h-full">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
-          New from Laura
+          From people you follow
         </h2>
       </div>
 
@@ -98,7 +118,7 @@ export function RightSidebar() {
             Nothing new right now
           </p>
           <p className="text-xs text-neutral-300 mt-2">
-            Books Laura encounters will appear here
+            New books from people you follow will appear here
           </p>
         </div>
       ) : (
@@ -135,26 +155,19 @@ export function RightSidebar() {
                 </div>
               </div>
 
-              {/* Review or status */}
-              {book.rating && book.reviewText ? (
-                <div className="mb-3">
-                  <p className="text-xs text-neutral-500 italic leading-relaxed line-clamp-2">
-                    &ldquo;{book.reviewText}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-1 mt-1.5">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <span
-                        key={star}
-                        className={`text-xs ${star <= book.rating! ? 'text-amber-400' : 'text-neutral-200'}`}
-                      >
-                        ★
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-neutral-400 mb-3">
-                  Added {formatDaysAgo(book.addedAt)} · Not yet rated
+              {/* Source + event */}
+              <div className="flex items-center gap-2 text-xs text-neutral-400 mb-2">
+                <span className="font-medium text-neutral-500">From {book.sourceName}</span>
+                <span>·</span>
+                <span>{formatEventLabel(book)}</span>
+                <span>·</span>
+                <span>{formatDaysAgo(book.addedAt)}</span>
+              </div>
+
+              {/* Review excerpt if available */}
+              {book.reviewText && (
+                <p className="text-xs text-neutral-500 italic leading-relaxed line-clamp-2 mb-3 pl-2 border-l-2 border-neutral-100">
+                  &ldquo;{book.reviewText}&rdquo;
                 </p>
               )}
 
@@ -164,7 +177,7 @@ export function RightSidebar() {
                   onClick={() => handleAddToList(book.id)}
                   className="flex-1 px-3 py-1.5 text-xs font-medium text-[#1f1a17] bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
                 >
-                  {book.rating ? 'Add to signals' : 'Watch'}
+                  Save
                 </button>
                 <button
                   onClick={() => handleIgnore(book.id)}
