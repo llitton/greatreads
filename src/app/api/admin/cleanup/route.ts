@@ -14,9 +14,19 @@ import { prisma } from '@/lib/prisma';
  * - It's a signal library of books that mattered
  */
 export async function POST(request: NextRequest) {
-  const session = await auth();
+  // Allow either CRON_SECRET or logged-in session
+  const headerSecret =
+    request.headers.get('x-cron-secret') ??
+    request.headers.get('x-admin-secret') ??
+    request.headers.get('authorization')?.replace('Bearer ', '');
 
-  if (!session?.user?.id) {
+  const cronSecret = process.env.CRON_SECRET;
+
+  const session = await auth();
+  const authedBySession = !!session?.user?.id;
+  const authedBySecret = !!cronSecret && headerSecret === cronSecret;
+
+  if (!authedBySession && !authedBySecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
