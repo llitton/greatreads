@@ -119,18 +119,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log the import
-    await prisma.goodreadsImport.create({
-      data: {
-        userId: session.user.id,
-        totalBooks: preview.allBooks.length,
-        fiveStarBooks: preview.fiveStarBooks.length,
-        favorites: preview.favorites.length,
-        booksAdded: progress.added,
-        booksSkipped: progress.skipped,
-        booksFailed: progress.failed,
-      },
-    });
+    // Log the import (non-blocking - don't fail import if logging fails)
+    try {
+      await prisma.goodreadsImport.create({
+        data: {
+          userId: session.user.id,
+          totalBooks: preview.allBooks.length,
+          fiveStarBooks: preview.fiveStarBooks.length,
+          favorites: preview.favorites.length,
+          booksAdded: progress.added,
+          booksSkipped: progress.skipped,
+          booksFailed: progress.failed,
+        },
+      });
+    } catch (logError) {
+      // Log server-side but don't fail the import
+      console.error('Failed to log import (non-critical):', logError);
+    }
 
     // Calculate result stats
     const feedBooks = options.importFiveStars && isPublic ? preview.fiveStarBooks.length : 0;
@@ -152,12 +157,42 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    // Log full error server-side for debugging
     console.error('Import confirm error:', error);
+
+    // Return safe, user-friendly error codes (never expose raw errors)
+    const errorCode = categorizeError(error);
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Import failed' },
+      {
+        error: 'Import could not be completed',
+        errorCode,
+        // Never include raw error messages - they leak implementation details
+      },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Categorize errors into safe, user-friendly codes
+ */
+function categorizeError(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+
+  // Database/Prisma errors
+  if (message.includes('does not exist') || message.includes('P2021')) {
+    return 'STORAGE_NOT_READY';
+  }
+  if (message.includes('unique constraint') || message.includes('P2002')) {
+    return 'DUPLICATE_ENTRY';
+  }
+  if (message.includes('connection') || message.includes('timeout')) {
+    return 'CONNECTION_ERROR';
+  }
+
+  // Generic fallback
+  return 'IMPORT_FAILED';
 }
 
 /**

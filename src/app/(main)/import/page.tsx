@@ -52,6 +52,7 @@ export default function ImportPage() {
   const [progress, setProgress] = useState<ImportProgress>({ added: 0, skipped: 0, failed: 0, total: 0 });
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string>('');
+  const [errorCode, setErrorCode] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Import options
@@ -87,6 +88,7 @@ export default function ImportPage() {
       setScreen('preview');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse file');
+      setErrorCode('FILE_PARSE_ERROR');
       setScreen('error');
     }
   }, []);
@@ -112,17 +114,21 @@ export default function ImportPage() {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Import failed');
+        setError(data.error || 'Import could not be completed');
+        setErrorCode(data.errorCode || 'IMPORT_FAILED');
+        setScreen('error');
+        return;
       }
 
-      const data = await res.json();
       setResult(data.result);
       setProgress(data.progress);
       setScreen('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
+      setErrorCode('CONNECTION_ERROR');
       setScreen('error');
     }
   }, [preview, importFiveStars, importFavorites, importShelves, importNotes, visibility]);
@@ -133,6 +139,7 @@ export default function ImportPage() {
     setProgress({ added: 0, skipped: 0, failed: 0, total: 0 });
     setResult(null);
     setError('');
+    setErrorCode('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -272,28 +279,95 @@ export default function ImportPage() {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // SCREEN: Error
+  // SCREEN: Error (trust-preserving, never blames the user)
   // ═══════════════════════════════════════════════════════════════════
   if (screen === 'error') {
+    // Determine if this is a file issue or a backend issue
+    const isFileError = errorCode === 'FILE_PARSE_ERROR';
+    const isBackendError = ['STORAGE_NOT_READY', 'CONNECTION_ERROR', 'IMPORT_FAILED', 'DUPLICATE_ENTRY'].includes(errorCode);
+
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center max-w-md">
-            <div className="text-4xl mb-6">⚠️</div>
-            <h2 className="text-xl font-semibold text-[#1f1a17] mb-3">
-              We couldn&apos;t read this file
+            {/* Icon - softer for backend errors */}
+            <div className="text-4xl mb-6">{isFileError ? '📄' : '⚙️'}</div>
+
+            {/* Headline - own the error calmly */}
+            <h2 className="text-xl font-semibold text-[#1f1a17] mb-4">
+              {isFileError
+                ? 'We couldn\'t read this file'
+                : 'We hit a snag while importing your books'}
             </h2>
-            <p className="text-[15px] text-neutral-500 mb-6 leading-relaxed">
-              {error || 'Make sure it\'s the Goodreads "Library Export" CSV (not a Kindle export).'}
-            </p>
+
+            {/* Body - honest, human, non-technical */}
+            {isBackendError ? (
+              <div className="space-y-4 mb-8">
+                <p className="text-[15px] text-neutral-600 leading-relaxed">
+                  Your file looks fine.
+                </p>
+                <p className="text-[15px] text-neutral-500 leading-relaxed">
+                  We ran into an internal setup issue while saving your import.
+                  Nothing was added yet, and nothing was lost.
+                </p>
+              </div>
+            ) : (
+              <p className="text-[15px] text-neutral-500 mb-8 leading-relaxed">
+                Make sure it&apos;s the Goodreads &quot;Library Export&quot; CSV (not a Kindle export or other format).
+              </p>
+            )}
+
+            {/* Actions - clear, not accusatory */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleReset}>
-                Try another file
-              </Button>
-              <Button variant="secondary" onClick={handleReset}>
-                Start over
-              </Button>
+              {isBackendError ? (
+                <>
+                  <Button onClick={handleReset}>
+                    Try again later
+                  </Button>
+                  <Link href="/feed">
+                    <Button variant="secondary">
+                      Go back to Feed
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Button onClick={handleReset}>
+                    Try a different file
+                  </Button>
+                  <Link href="/feed">
+                    <Button variant="secondary">
+                      Back to Feed
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
+
+            {/* Expandable detail for curious users */}
+            {isBackendError && (
+              <details className="mt-8 text-left">
+                <summary className="text-sm text-neutral-400 hover:text-neutral-600 cursor-pointer transition-colors">
+                  What happened?
+                </summary>
+                <div className="mt-3 p-4 bg-neutral-50 rounded-xl text-sm text-neutral-500 leading-relaxed">
+                  <p className="mb-2">
+                    We haven&apos;t finished setting up the place where imported books are stored.
+                  </p>
+                  <p>This is on us — not your file.</p>
+                  {errorCode && (
+                    <p className="mt-3 text-xs text-neutral-400">
+                      Reference: {errorCode}
+                    </p>
+                  )}
+                </div>
+              </details>
+            )}
+
+            {/* Trust line - reframes failure as intentional caution */}
+            <p className="mt-10 text-sm text-neutral-300 italic">
+              GreatReads is built to be careful with your reading history.
+            </p>
           </div>
         </div>
       </div>
