@@ -69,6 +69,8 @@ model User {
   topTenRequestsSent   TopTenRequest[]       @relation("RequestsSent")
   notifications        NotificationLog[]
   goodreadsImports     GoodreadsImport[]
+  rssSources           RssSource[]
+  rssItemActions       RssItemAction[]
 }
 
 model FriendSource {
@@ -109,6 +111,7 @@ model Book {
   events           FriendFiveStarEvent[]
   userBookStatuses UserBookStatus[]
   topTenItems      TopTenItem[]
+  rssItemActions   RssItemAction[]
 
   @@index([title])
   @@index([isbn])
@@ -267,4 +270,92 @@ model GoodreadsImport {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RSS Inbox System
+// ═══════════════════════════════════════════════════════════════════
+
+model RssSource {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  url           String    @db.Text
+  title         String?   // Feed title (auto-detected or override)
+  description   String?   @db.Text
+  siteUrl       String?   @db.Text
+
+  isActive      Boolean   @default(true)
+  lastFetchedAt DateTime?
+  lastError     String?   @db.Text
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  items         RssItem[]
+
+  @@unique([userId, url])
+  @@index([userId, isActive])
+}
+
+model RssItem {
+  id            String    @id @default(cuid())
+
+  sourceId      String
+  source        RssSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  guid          String?   // <guid> or stable unique key
+  url           String?   @db.Text
+  title         String?
+  author        String?
+  publishedAt   DateTime?
+  rawHtml       String?   @db.Text  // Raw excerpt/content
+  cleanText     String?   @db.Text  // Sanitized plain text for display
+
+  // Book extraction fields (parsed from RSS)
+  bookTitle     String?
+  bookAuthor    String?
+  coverImageUrl String?   @db.Text
+  isbn          String?
+
+  // Deduplication
+  dedupHash     String    // hash of (sourceId + guid/url/title)
+  createdAt     DateTime  @default(now())
+
+  actions       RssItemAction[]
+
+  @@unique([sourceId, dedupHash])
+  @@index([sourceId, createdAt])
+}
+
+enum RssActionStatus {
+  UNSEEN
+  SEEN
+  SAVED
+  IGNORED
+}
+
+model RssItemAction {
+  id         String          @id @default(cuid())
+  itemId     String
+  item       RssItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status     RssActionStatus @default(UNSEEN)
+  seenAt     DateTime?
+  savedAt    DateTime?
+  ignoredAt  DateTime?
+
+  // If saved, link to the book it created
+  bookId     String?
+  book       Book?           @relation(fields: [bookId], references: [id])
+
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([userId, itemId])
+  @@index([userId, status, updatedAt])
 }

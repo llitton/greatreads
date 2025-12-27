@@ -58,3 +58,18 @@ export function truncate(text: string, maxLength: number = 200): string {
 
   return truncated + '…';
 }
+
+/**
+ * Clean and truncate excerpt for sidebar display
+ * Optimized for RSS item previews
+ */
+export function cleanExcerpt(html: string | null | undefined, maxLength: number = 240): string | null {
+  if (!html) return null;
+
+  const text = normalizeGoodreadsText(html);
+  if (!text) return null;
+
+  return text.length > maxLength
+    ? text.slice(0, maxLength - 3) + '...'
+    : text;
+}
