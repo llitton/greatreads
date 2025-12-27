@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { normalizeGoodreadsText } from '@/lib/text/normalize';
 
 interface IncomingBook {
   id: string;
@@ -165,9 +166,9 @@ export function RightSidebar() {
               </div>
 
               {/* Review excerpt if available */}
-              {book.reviewText && (
+              {book.reviewText && normalizeGoodreadsText(book.reviewText) && (
                 <p className="text-xs text-neutral-500 italic leading-relaxed line-clamp-2 mb-3 pl-2 border-l-2 border-neutral-100">
-                  &ldquo;{book.reviewText}&rdquo;
+                  &ldquo;{normalizeGoodreadsText(book.reviewText)}&rdquo;
                 </p>
               )}
 

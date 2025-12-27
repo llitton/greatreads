@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { BookCoverWithFallback } from '@/components/ui/book-cover';
+import { normalizeGoodreadsText } from '@/lib/text/normalize';
 
 interface FeedCardProps {
   event: {
@@ -51,19 +53,12 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
         <div className="flex-1 p-6">
           <div className="flex gap-5">
             {/* Book cover */}
-            <div className="flex-shrink-0">
-              {event.book.coverUrl ? (
-                <img
-                  src={event.book.coverUrl}
-                  alt={`Cover of ${event.book.title}`}
-                  className="w-20 h-28 object-cover rounded-lg shadow-md"
-                />
-              ) : (
-                <div className="w-20 h-28 bg-gradient-to-br from-[#f5f0e6] to-[#e8e0d4] rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-3xl">📕</span>
-                </div>
-              )}
-            </div>
+            <BookCoverWithFallback
+              src={event.book.coverUrl}
+              title={event.book.title}
+              size="lg"
+              className="shadow-md"
+            />
 
             {/* Content */}
             <div className="flex-1 min-w-0">
@@ -104,9 +99,9 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
               </div>
 
               {/* Review snippet */}
-              {event.reviewText && (
+              {event.reviewText && normalizeGoodreadsText(event.reviewText) && (
                 <p className="text-[15px] leading-relaxed text-neutral-600 line-clamp-2 mb-4 italic bg-neutral-50 rounded-xl px-4 py-3 border-l-2 border-[#d4a855]">
-                  &ldquo;{event.reviewText}&rdquo;
+                  &ldquo;{normalizeGoodreadsText(event.reviewText)}&rdquo;
                 </p>
               )}
 
