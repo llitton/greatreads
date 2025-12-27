@@ -147,15 +147,15 @@ export default function FeedPage() {
             </p>
           </header>
 
-          {/* Personal canon - the emotional anchor */}
-          <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl px-12 pt-10 pb-12 shadow-sm">
-            {/* Label - deliberate framing */}
-            <div className="text-center mb-10">
-              <p className="text-sm font-medium text-[#1f1a17] tracking-wide mb-1">
+          {/* Personal canon - the emotional anchor, ceremonial */}
+          <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl px-12 pt-12 pb-14 shadow-sm border border-[#f0ebe3]">
+            {/* Label - ceremonial framing */}
+            <div className="text-center mb-12">
+              <p className="text-base font-semibold text-[#1f1a17] tracking-wide mb-2">
                 Personal canon
               </p>
-              <p className="text-xs text-neutral-400">
-                Not recommendations. Not a feed.
+              <p className="text-sm text-neutral-400">
+                A short list. Not a feed.
               </p>
             </div>
 
@@ -207,22 +207,22 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HOW THE FEED WORKS - breathing room, clear sections
+          WHAT THIS PLACE IS - principle, not documentation
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-24">
-        {/* Section header - tighter, firmer copy */}
+        {/* Section header - principle-forward */}
         <div className="mb-12">
           <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
-            {hasNoSources ? 'Why books appear here' : 'Your feed'}
+            {hasNoSources ? 'What this place is' : 'Your feed'}
           </p>
           <p className="text-[17px] text-neutral-600 leading-relaxed max-w-md">
             {hasNoSources
-              ? 'Only books someone you trust chose to give five stars.'
+              ? 'Only books someone you trust loved enough to give five stars.'
               : 'Books your friends loved enough to rate five stars.'}
           </p>
           {hasNoSources && (
-            <p className="text-[15px] text-neutral-400 mt-2">
-              Nothing popular. Nothing trending.
+            <p className="text-sm text-neutral-400 mt-3 italic">
+              Nothing popular. Nothing trending. Nothing algorithmic.
             </p>
           )}
         </div>

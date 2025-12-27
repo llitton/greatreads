@@ -171,22 +171,23 @@ export default function SettingsPage() {
       </header>
 
       <div className="space-y-8">
-        {/* Profile card */}
+        {/* Identity card - separates account from authorship */}
         <section className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
           <div className="p-6 pb-0">
             <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
-              Profile
+              Identity
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              This is how your recommendations are credited.
+              Who uses this app and whose taste it shows.
             </p>
           </div>
 
           <div className="p-6 space-y-6">
+            {/* Account holder */}
             <div>
-              <label className="block text-sm font-medium text-[#1f1a17] mb-2">
-                Display name
-              </label>
+              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
+                Account
+              </p>
               <input
                 type="text"
                 value={name}
@@ -194,35 +195,82 @@ export default function SettingsPage() {
                 placeholder="Mark"
                 className="w-full h-11 px-4 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 focus:border-transparent transition-all"
               />
-              <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
-                Shows up when friends view your picks. Identity matters because taste matters.
+              <p className="text-xs text-neutral-400 mt-2">
+                This is who uses the app.
               </p>
             </div>
 
+            {/* Recommendation credit - shows source of taste */}
             <div className="pt-4 border-t border-black/5">
-              <label className="block text-sm font-medium text-[#1f1a17] mb-2">
-                Email
-              </label>
+              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
+                Recommendation credit
+              </p>
+              <div className="flex items-center gap-3 h-11 px-4 bg-amber-50/50 rounded-xl border border-amber-100">
+                <span className="text-[15px] font-medium text-[#1f1a17]">
+                  Laura
+                </span>
+                <span className="text-xs text-neutral-400">
+                  (imported from Goodreads)
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-2">
+                Whose taste appears on recommendations. &ldquo;Loved by Laura&rdquo;
+              </p>
+            </div>
+
+            {/* Email - de-emphasized */}
+            <div className="pt-4 border-t border-black/5">
+              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
+                Sign-in email
+              </p>
               <div className="flex items-center gap-3 h-11 px-4 bg-neutral-50 rounded-xl border border-black/5">
                 <span className="text-[15px] text-neutral-600">
                   {settings?.email}
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
-                Used for sign-in and thoughtful notifications. We won&apos;t email you unless it matters.
-              </p>
             </div>
           </div>
         </section>
 
-        {/* Notifications card */}
+        {/* Reading history - shows import source */}
         <section className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
           <div className="p-6 pb-0">
             <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
-              Notifications
+              Reading history
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              Decide how and when great books reach you.
+              Where your signals come from.
+            </p>
+          </div>
+
+          <div className="p-6">
+            <div className="flex items-start justify-between gap-6 p-4 bg-neutral-50 rounded-xl">
+              <div className="flex-1">
+                <p className="text-[15px] font-medium text-[#1f1a17] mb-0.5">
+                  Goodreads import
+                </p>
+                <p className="text-sm text-neutral-500">
+                  Laura&apos;s reading history imported via CSV
+                </p>
+              </div>
+              <a
+                href="/import"
+                className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors flex-shrink-0"
+              >
+                Re-import →
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Signals you want to receive */}
+        <section className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
+          <div className="p-6 pb-0">
+            <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
+              Signals you want to receive
+            </h2>
+            <p className="text-sm text-neutral-500 leading-relaxed">
+              Rare by design. Only strong signals.
             </p>
           </div>
 
@@ -230,8 +278,8 @@ export default function SettingsPage() {
             {/* Email notifications - clickable row */}
             <ToggleRow
               id="notify-email"
-              label="Email me when a friend gives a book 5 stars"
-              description="Only when someone you trust really loved something."
+              label="Notify me when someone I trust gives a book five stars"
+              description="Only when someone you follow really loved something."
               checked={notifyEmail}
               onChange={setNotifyEmail}
             />
@@ -242,8 +290,8 @@ export default function SettingsPage() {
             {/* SMS notifications - clickable row */}
             <ToggleRow
               id="notify-sms"
-              label="Text me about new picks"
-              description="A rare message when someone you follow finds something special."
+              label="Text me about exceptional picks"
+              description="Reserved for books that truly stand out."
               checked={notifySms}
               onChange={setNotifySms}
             />
@@ -289,15 +337,16 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* About GreatReads - meta section */}
-        <section className="bg-neutral-50 rounded-2xl p-6">
-          <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide mb-4">
-            About GreatReads
+        {/* Principles - manifesto, not footer */}
+        <section className="bg-neutral-50 rounded-2xl p-8">
+          <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide mb-6">
+            Principles
           </h2>
-          <div className="space-y-2 text-sm text-neutral-600">
-            <p>Built as a personal project.</p>
-            <p>No ads. No tracking. No feeds optimized for engagement.</p>
-            <p>Your data is yours.</p>
+          <div className="space-y-3 text-[15px] text-neutral-600 leading-relaxed">
+            <p>No ads</p>
+            <p>No tracking</p>
+            <p>No engagement tricks</p>
+            <p className="pt-2 text-neutral-500">Your data is yours.</p>
           </div>
         </section>
 
