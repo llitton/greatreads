@@ -151,25 +151,42 @@ export default function ImportPage() {
   if (screen === 'upload') {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <header className="mb-12">
+        <header className="mb-10">
           <h1 className="text-2xl font-semibold text-[#1f1a17] mb-3">
             Import from Goodreads
           </h1>
-          <p className="text-[15px] text-neutral-500 leading-relaxed">
-            This is a one-time upload. GreatReads reads your file, extracts your strongest signals, and saves only what you choose to keep.
+          {/* Lead with reassurance */}
+          <p className="text-[15px] text-neutral-600 leading-relaxed mb-2">
+            This is a one-time upload. We&apos;ll show you exactly what would be added before anything is saved.
+          </p>
+          <p className="text-sm text-neutral-500 leading-relaxed">
+            GreatReads reads your Goodreads export, looks for 5-star books and strong signals, and ignores the rest.
           </p>
         </header>
 
-        {/* Step-by-step guide */}
-        <section className="mb-12">
-          <div className="bg-neutral-50 rounded-2xl p-6 space-y-4">
+        {/* Step-by-step guide with export help inline */}
+        <section className="mb-10">
+          <div className="bg-neutral-50 rounded-2xl p-6 space-y-5">
             <div className="flex gap-4">
               <span className="w-6 h-6 rounded-full bg-[#1f1a17] text-white text-sm flex items-center justify-center flex-shrink-0">1</span>
               <div>
-                <p className="text-[15px] text-[#1f1a17] font-medium">Export your Goodreads library (CSV)</p>
+                <p className="text-[15px] text-[#1f1a17] font-medium">Export your Goodreads library</p>
                 <p className="text-sm text-neutral-500 mt-1">
-                  Go to Goodreads → My Books → Tools → Import and Export → Export Library
+                  Goodreads → My Books → Tools → Import and Export → Export Library
                 </p>
+                <details className="mt-2 group">
+                  <summary className="text-xs text-neutral-400 hover:text-neutral-600 cursor-pointer transition-colors">
+                    Detailed instructions →
+                  </summary>
+                  <div className="mt-3 pl-4 border-l-2 border-neutral-200 space-y-2 text-xs text-neutral-500">
+                    <p>1. Sign in to Goodreads.com</p>
+                    <p>2. Click &quot;My Books&quot; in the navigation</p>
+                    <p>3. Look for &quot;Tools&quot; in the left sidebar</p>
+                    <p>4. Click &quot;Import and Export&quot;</p>
+                    <p>5. Click &quot;Export Library&quot; at the bottom</p>
+                    <p className="text-neutral-400 italic">May take a few minutes for large libraries.</p>
+                  </div>
+                </details>
               </div>
             </div>
             <div className="flex gap-4">
@@ -182,11 +199,11 @@ export default function ImportPage() {
               </div>
             </div>
             <div className="flex gap-4">
-              <span className="w-6 h-6 rounded-full bg-[#1f1a17] text-white text-sm flex items-center justify-center flex-shrink-0">3</span>
+              <span className="w-6 h-6 rounded-full bg-amber-500 text-white text-sm flex items-center justify-center flex-shrink-0">3</span>
               <div>
-                <p className="text-[15px] text-[#1f1a17] font-medium">Preview what will be added</p>
-                <p className="text-sm text-neutral-500 mt-1">
-                  You&apos;ll see exactly what GreatReads will import before confirming.
+                <p className="text-[15px] text-[#1f1a17] font-medium">Preview before confirming</p>
+                <p className="text-sm text-neutral-600 mt-1">
+                  Nothing is saved until you approve it.
                 </p>
               </div>
             </div>
@@ -194,7 +211,7 @@ export default function ImportPage() {
         </section>
 
         {/* Upload area */}
-        <section className="mb-12">
+        <section className="mb-8">
           <input
             ref={fileInputRef}
             type="file"
@@ -205,43 +222,37 @@ export default function ImportPage() {
           />
           <label
             htmlFor="csv-upload"
-            className="block w-full p-12 border-2 border-dashed border-neutral-200 rounded-2xl text-center cursor-pointer hover:border-neutral-300 hover:bg-neutral-50/50 transition-all"
+            className="block w-full p-12 border-2 border-dashed border-neutral-200 rounded-2xl text-center cursor-pointer hover:border-neutral-400 hover:bg-neutral-50/50 transition-all"
           >
             <div className="text-4xl mb-4">📄</div>
             <p className="text-[15px] font-medium text-[#1f1a17] mb-2">
-              Upload CSV
+              Upload Goodreads export
             </p>
             <p className="text-sm text-neutral-500">
-              or drag and drop your file here
+              or drag and drop your CSV here
             </p>
           </label>
+          <p className="text-xs text-neutral-400 text-center mt-3">
+            Most imports result in a short list, not a full library.
+          </p>
+        </section>
+
+        {/* What this won't do - trust builder */}
+        <section className="mb-10 bg-neutral-50/50 rounded-xl p-5">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
+            What this won&apos;t do
+          </p>
+          <div className="space-y-2 text-sm text-neutral-500">
+            <p>Create a feed you have to check</p>
+            <p>Track your reading progress</p>
+            <p>Surface books you didn&apos;t love</p>
+          </div>
         </section>
 
         {/* Reassurance */}
         <section className="space-y-2 text-sm text-neutral-400">
           <p>We&apos;ll never post to Goodreads.</p>
           <p>You can delete imported data anytime.</p>
-        </section>
-
-        {/* Help link */}
-        <section className="mt-12 pt-8 border-t border-black/5">
-          <details className="group">
-            <summary className="text-sm text-neutral-400 hover:text-neutral-600 cursor-pointer transition-colors">
-              <span className="group-open:hidden">Show me how to export →</span>
-              <span className="hidden group-open:inline">Hide instructions</span>
-            </summary>
-            <div className="mt-4 bg-neutral-50 rounded-xl p-5 space-y-3 text-sm text-neutral-600">
-              <p><strong>1.</strong> Sign in to Goodreads.com</p>
-              <p><strong>2.</strong> Click &quot;My Books&quot; in the navigation</p>
-              <p><strong>3.</strong> Look for &quot;Tools&quot; in the left sidebar (below your shelves)</p>
-              <p><strong>4.</strong> Click &quot;Import and Export&quot;</p>
-              <p><strong>5.</strong> Click &quot;Export Library&quot; at the bottom</p>
-              <p><strong>6.</strong> Wait for the download link to appear, then download</p>
-              <p className="text-neutral-400 italic pt-2">
-                The export may take a few minutes if you have many books.
-              </p>
-            </div>
-          </details>
         </section>
 
         {/* Back link */}

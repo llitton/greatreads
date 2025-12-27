@@ -119,7 +119,7 @@ export default function FeedPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-4">📚</div>
-          <p className="text-neutral-500">Loading your feed...</p>
+          <p className="text-neutral-500">Loading signals...</p>
         </div>
       </div>
     );
@@ -147,18 +147,15 @@ export default function FeedPage() {
             </p>
           </header>
 
-          {/* Personal canon - the emotional anchor, ceremonial */}
+          {/* Personal canon - the emotional anchor */}
           <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl px-12 pt-12 pb-14 shadow-sm border border-[#f0ebe3]">
-            {/* Label - ceremonial framing */}
+            {/* Label */}
             <div className="text-center mb-12">
               <p className="text-base font-semibold text-[#1f1a17] tracking-wide mb-2">
                 Personal canon
               </p>
-              <p className="text-sm text-neutral-400 mb-3">
-                A short list. Not a feed.
-              </p>
-              <p className="text-xs text-neutral-300 italic">
-                Says more than a feed ever could.
+              <p className="text-sm text-neutral-400">
+                Books that stayed
               </p>
             </div>
 
@@ -167,8 +164,16 @@ export default function FeedPage() {
               {marksFavorites.map((book) => (
                 <div
                   key={book.title}
-                  className="group flex-shrink-0 text-center"
+                  className="group relative flex-shrink-0 text-center"
                 >
+                  {/* Tooltip - positioned above cover */}
+                  <div className="pointer-events-none absolute left-1/2 top-0 z-50 hidden -translate-x-1/2 -translate-y-3 group-hover:block">
+                    <div className="rounded-md bg-neutral-900 px-3 py-2 text-xs text-white shadow-lg ring-1 ring-black/10 whitespace-nowrap">
+                      This stayed with me
+                    </div>
+                    <div className="mx-auto h-0 w-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-neutral-900" />
+                  </div>
+
                   {/* Cover with depth and hover delight */}
                   <div className="relative mb-5">
                     <img
@@ -183,13 +188,6 @@ export default function FeedPage() {
                     />
                     <div className="hidden w-28 h-[168px] bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg shadow-xl flex items-center justify-center">
                       <span className="text-3xl">📕</span>
-                    </div>
-
-                    {/* Hover reveal - "This stayed with me" */}
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                      <p className="text-xs text-neutral-400 italic whitespace-nowrap">
-                        This stayed with me.
-                      </p>
                     </div>
                   </div>
 
@@ -210,24 +208,19 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          WHAT THIS PLACE IS - one clear sentence, then principle
+          FEED SECTION
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-24">
-        {/* Section header - mission statement */}
+        {/* Section header */}
         <div className="mb-12">
           {hasNoSources ? (
-            <>
-              <p className="text-[17px] text-neutral-600 leading-relaxed max-w-lg mb-3">
-                A small, intentional list of books recommended by people you trust — only when a book truly mattered to them.
-              </p>
-              <p className="text-sm text-neutral-400 italic">
-                Nothing popular. Nothing trending. Nothing algorithmic.
-              </p>
-            </>
+            <p className="text-[17px] text-neutral-600 leading-relaxed max-w-lg">
+              Only books someone you trust loved enough to give five stars.
+            </p>
           ) : (
             <>
               <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
-                Your feed
+                Signals
               </p>
               <p className="text-[17px] text-neutral-600 leading-relaxed max-w-md">
                 Books your friends loved enough to rate five stars.

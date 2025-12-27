@@ -297,65 +297,124 @@ export default function Top10Page() {
 
       {/* List or Preview */}
       {hasBooks ? (
-        <Top10List items={topTen!.items} onReorder={handleReorder} onRemove={handleRemove} />
+        <>
+          {/* Progress indicator */}
+          <div className="mb-6 flex items-center justify-between">
+            <p className="text-sm text-neutral-500">
+              {topTen!.items.length} of 10 · <span className="text-neutral-400 italic">Your canon is taking shape</span>
+            </p>
+            <p className="text-xs text-neutral-300">
+              You can reorder anytime
+            </p>
+          </div>
+          <Top10List items={topTen!.items} onReorder={handleReorder} onRemove={handleRemove} />
+
+          {/* Remaining prompts - as invitations, not vacancies */}
+          {topTen!.items.length < 10 && (
+            <div className="mt-8 space-y-3">
+              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
+                Waiting for a thought
+              </p>
+              {Array.from({ length: 10 - topTen!.items.length }, (_, i) => {
+                const rank = topTen!.items.length + i + 1;
+                return (
+                  <button
+                    key={rank}
+                    onClick={() => setShowAddBook(true)}
+                    className="w-full flex items-center gap-5 p-5 rounded-2xl bg-[#fdfcfa] border border-[#f0ebe3] hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left group"
+                  >
+                    <span className="w-8 h-8 flex items-center justify-center text-lg text-neutral-300 group-hover:text-neutral-400 flex-shrink-0 transition-colors">
+                      {rank}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-[15px] text-neutral-400 group-hover:text-neutral-600 transition-colors">
+                        {slotPrompts[rank] || 'A book that belongs here'}
+                      </p>
+                    </div>
+                    <span className="text-neutral-300 group-hover:text-neutral-500 transition-colors">
+                      +
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
       ) : (
-        /* Preview - what this will look like */
+        /* Empty state - invitational, not vacant */
         <div className="space-y-8">
-          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
-            What this will look like
-          </p>
-
-          <div className="space-y-4">
-            {/* Preview books with real covers */}
-            {previewBooks.map((book) => (
-              <div
-                key={book.rank}
-                className="flex items-center gap-5 p-5 bg-white rounded-2xl border border-black/5 shadow-sm opacity-70"
-              >
-                {/* Rank */}
-                <span className="w-10 h-10 flex items-center justify-center text-xl font-semibold text-neutral-300 flex-shrink-0">
-                  {book.rank}
-                </span>
-                {/* Cover */}
-                <img
-                  src={book.coverUrl}
-                  alt=""
-                  className="w-14 h-20 object-cover rounded-lg shadow-md flex-shrink-0"
-                />
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[#1f1a17] mb-1">{book.title}</p>
-                  <p className="text-sm text-neutral-500">{book.author}</p>
-                </div>
-              </div>
-            ))}
-
-            {/* Empty slots with prompts */}
-            {[4, 5, 6, 7, 8, 9, 10].map((rank) => (
-              <div
-                key={rank}
-                className="flex items-center gap-5 p-5 rounded-2xl bg-neutral-50/30 border border-dashed border-neutral-200/60"
-              >
-                {/* Ceremonial rank number */}
-                <span className="w-10 h-10 flex items-center justify-center text-xl font-serif text-neutral-200 flex-shrink-0">
-                  {rank}
-                </span>
-                <div className="w-14 h-20 bg-neutral-100/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-neutral-200 text-lg">+</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-neutral-300 text-sm italic">
-                    {slotPrompts[rank] || '—'}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+              Here&apos;s how this can look
+            </p>
+            <p className="text-xs text-neutral-300 italic">
+              Examples from Laura
+            </p>
           </div>
 
-          {/* Encouragement */}
-          <p className="text-center text-sm text-neutral-400">
-            Most people don&apos;t fill this all at once.
-          </p>
+          <div className="space-y-4">
+            {/* Preview books - clearly framed as example */}
+            <div className="bg-[#fdfcfa] rounded-2xl p-4 border border-[#f0ebe3]">
+              {previewBooks.map((book) => (
+                <div
+                  key={book.rank}
+                  className="flex items-center gap-5 p-4"
+                >
+                  <span className="w-8 h-8 flex items-center justify-center text-lg text-neutral-400 flex-shrink-0">
+                    {book.rank}
+                  </span>
+                  <img
+                    src={book.coverUrl}
+                    alt=""
+                    className="w-12 h-[72px] object-cover rounded-lg shadow-sm flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-[#1f1a17] mb-0.5">{book.title}</p>
+                    <p className="text-sm text-neutral-500">{book.author}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Prompts - as invitations to reflect */}
+            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide pt-4">
+              Prompts to help you begin
+            </p>
+            {[4, 5, 6, 7].map((rank) => (
+              <button
+                key={rank}
+                onClick={() => setShowAddBook(true)}
+                className="w-full flex items-center gap-5 p-5 rounded-2xl bg-[#fdfcfa] border border-[#f0ebe3] hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left group"
+              >
+                <span className="w-8 h-8 flex items-center justify-center text-lg text-neutral-300 group-hover:text-neutral-400 flex-shrink-0 transition-colors">
+                  {rank}
+                </span>
+                <div className="flex-1">
+                  <p className="text-[15px] text-neutral-400 group-hover:text-neutral-600 transition-colors">
+                    {slotPrompts[rank]}
+                  </p>
+                </div>
+                <span className="text-neutral-300 group-hover:text-neutral-500 transition-colors">
+                  +
+                </span>
+              </button>
+            ))}
+
+            {/* Remaining slots - collapsed */}
+            <p className="text-center text-xs text-neutral-300 pt-2">
+              + 3 more slots waiting
+            </p>
+          </div>
+
+          {/* Encouragement - reframed as permission */}
+          <div className="text-center space-y-2 pt-4">
+            <p className="text-sm text-neutral-500">
+              Most people add one or two at a time.
+            </p>
+            <p className="text-xs text-neutral-400 italic">
+              This list is meant to evolve.
+            </p>
+          </div>
         </div>
       )}
 

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { StarRating } from '@/components/ui/star-rating';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { normalizeGoodreadsText } from '@/lib/text/normalize';
 
 interface UserBookStatus {
   id: string;
@@ -20,66 +20,27 @@ interface UserBookStatus {
   };
 }
 
-// Signal summary component
-function SignalSummary({ books }: { books: UserBookStatus[] }) {
-  const insights = useMemo(() => {
-    const fiveStars = books.filter(b => b.userRating === 5);
-
-    // Group by source person
-    const sourceCounts: Record<string, number> = {};
-    books.forEach(b => {
-      const source = b.sourcePersonName || 'Unknown';
-      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
-    });
-    const sources = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]);
-
-    return {
-      total: books.length,
-      fiveStarCount: fiveStars.length,
-      sources,
-    };
-  }, [books]);
-
-  if (books.length === 0) return null;
-
-  return (
-    <div className="bg-neutral-50 rounded-2xl p-5 mb-8">
-      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
-        Signals from people you trust
-      </p>
-      <div className="flex flex-wrap gap-6">
-        <div>
-          <p className="text-2xl font-semibold text-[#d4a855]">{insights.fiveStarCount}</p>
-          <p className="text-sm text-neutral-500">five-star books</p>
-        </div>
-        <div>
-          <p className="text-2xl font-semibold text-[#1f1a17]">{insights.total}</p>
-          <p className="text-sm text-neutral-500">total signals</p>
-        </div>
-        {insights.sources.length > 0 && (
-          <div className="flex-1">
-            <div className="flex flex-wrap gap-2">
-              {insights.sources.map(([name, count]) => (
-                <span key={name} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white rounded-full text-sm border border-black/5">
-                  <span className="font-medium text-[#1f1a17]">{name}</span>
-                  <span className="text-neutral-400">{count}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function MyBooksPage() {
   const [books, setBooks] = useState<UserBookStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'WANT_TO_READ' | 'READING' | 'READ'>('all');
+  const [filter, setFilter] = useState<'all' | 'READ'>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editRating, setEditRating] = useState<number>(0);
   const [editNotes, setEditNotes] = useState<string>('');
+
+  // Primary source person (for header)
+  const primarySource = useMemo(() => {
+    const sources = books.map(b => b.sourcePersonName).filter(Boolean);
+    if (sources.length === 0) return 'Laura';
+    const counts: Record<string, number> = {};
+    sources.forEach(s => { counts[s!] = (counts[s!] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  }, [books]);
+
+  // Count books with reflections
+  const booksWithNotes = useMemo(() =>
+    books.filter(b => b.userNotes && normalizeGoodreadsText(b.userNotes).length > 0).length,
+    [books]
+  );
 
   useEffect(() => {
     fetchBooks();
@@ -112,7 +73,6 @@ export default function MyBooksPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         bookId,
-        userRating: editRating || null,
         userNotes: editNotes || null,
       }),
     });
@@ -122,11 +82,11 @@ export default function MyBooksPage() {
 
   const startEdit = (book: UserBookStatus) => {
     setEditingId(book.book.id);
-    setEditRating(book.userRating || 0);
     setEditNotes(book.userNotes || '');
   };
 
-  const filteredBooks = filter === 'all' ? books : books.filter((b) => b.status === filter);
+  // Simple filter: all or just read
+  const filteredBooks = filter === 'all' ? books : books.filter((b) => b.status === 'READ');
 
   if (loading) {
     return (
@@ -140,30 +100,36 @@ export default function MyBooksPage() {
   }
 
   const isEmpty = books.length === 0;
+  const readCount = books.filter(b => b.status === 'READ').length;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      {/* Header - trust network framing */}
-      <header className="mb-10">
+      {/* Header - simple, clear */}
+      <header className="mb-8">
         <h1 className="text-2xl font-semibold text-[#1f1a17] mb-2">
-          Books from People You Trust
+          Books {primarySource} Loved
         </h1>
-        <p className="text-[17px] text-neutral-500 leading-relaxed">
-          Only the strongest signals. Nothing else.
-        </p>
+        {!isEmpty && (
+          <p className="text-[15px] text-neutral-500 leading-relaxed">
+            {books.length} book{books.length !== 1 ? 's' : ''} that mattered enough to give five stars.
+            {booksWithNotes > 0 && (
+              <span className="text-neutral-400"> · {booksWithNotes} with notes</span>
+            )}
+          </p>
+        )}
+        {isEmpty && (
+          <p className="text-[15px] text-neutral-500 leading-relaxed">
+            Only the strongest signals. Nothing else.
+          </p>
+        )}
       </header>
 
-      {/* Signal summary - only when there are books */}
-      {!isEmpty && <SignalSummary books={books} />}
-
-      {/* Filter tabs - contextual */}
-      {!isEmpty ? (
+      {/* Simplified filter - just All vs Read */}
+      {!isEmpty && readCount !== books.length ? (
         <div className="flex gap-2 mb-8">
           {[
-            { value: 'all', label: 'All' },
-            { value: 'WANT_TO_READ', label: 'Want to Read' },
-            { value: 'READING', label: 'Reading' },
-            { value: 'READ', label: 'Read' },
+            { value: 'all', label: `All (${books.length})` },
+            { value: 'READ', label: `Read (${readCount})` },
           ].map((f) => (
             <button
               key={f.value}
@@ -178,11 +144,11 @@ export default function MyBooksPage() {
             </button>
           ))}
         </div>
-      ) : (
-        <p className="text-xs text-neutral-300 mb-8">
-          Filters appear once you add books.
+      ) : !isEmpty ? (
+        <p className="text-xs text-neutral-400 mb-8">
+          All books shown are five-star ratings from {primarySource}.
         </p>
-      )}
+      ) : null}
 
       {/* Empty state - guided, not placeholder */}
       {isEmpty ? (
@@ -231,118 +197,140 @@ export default function MyBooksPage() {
           </p>
         </div>
       ) : (
+        /* Clean book list - visual hierarchy based on reflections */
         <div className="space-y-3">
-          {filteredBooks.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 hover:shadow-md transition-shadow">
-              <div className="flex gap-4">
-                {/* Cover */}
-                {item.book.coverUrl ? (
-                  <img
-                    src={item.book.coverUrl}
-                    alt=""
-                    className="w-14 h-20 object-cover rounded-lg shadow-sm flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-14 h-20 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-xl">📕</span>
-                  </div>
-                )}
+          {filteredBooks.map((item) => {
+            const cleanedNotes = item.userNotes ? normalizeGoodreadsText(item.userNotes) : null;
+            const hasReflection = cleanedNotes && cleanedNotes.length > 0;
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-[#1f1a17]">
-                    {item.book.title}
-                  </h3>
-                  {item.book.author && (
-                    <p className="text-sm text-neutral-500">{item.book.author}</p>
+            return (
+              <div
+                key={item.id}
+                className={`group bg-white rounded-2xl border shadow-sm p-5 hover:shadow-md transition-all ${
+                  hasReflection
+                    ? 'border-l-4 border-l-amber-200 border-t-black/5 border-r-black/5 border-b-black/5'
+                    : 'border-black/5'
+                }`}
+              >
+                <div className="flex gap-4">
+                  {/* Cover */}
+                  {item.book.coverUrl ? (
+                    <img
+                      src={item.book.coverUrl}
+                      alt=""
+                      className="w-14 h-20 object-cover rounded-lg shadow-sm flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-14 h-20 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-xl">📕</span>
+                    </div>
                   )}
 
-                  {/* Source person + rating */}
-                  <div className="mt-2 flex items-center gap-3 flex-wrap">
-                    {item.sourcePersonName && (
-                      <span className="text-xs text-neutral-400">
-                        from <span className="font-medium text-neutral-600">{item.sourcePersonName}</span>
-                      </span>
-                    )}
-                    {item.userRating === 5 && (
-                      <span className="text-xs text-amber-500">★ 5-star</span>
-                    )}
-                  </div>
-
-                  {/* Edit mode */}
-                  {editingId === item.book.id ? (
-                    <div className="mt-4 space-y-3">
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
                       <div>
-                        <label className="block text-sm font-medium text-[#1f1a17] mb-1.5">
-                          My Rating
-                        </label>
-                        <StarRating value={editRating} onChange={setEditRating} />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#1f1a17] mb-1.5">
-                          My Notes
-                        </label>
-                        <textarea
-                          value={editNotes}
-                          onChange={(e) => setEditNotes(e.target.value)}
-                          className="w-full px-4 py-3 text-sm bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
-                          rows={2}
-                          placeholder="Add your thoughts about this book..."
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleSaveEdit(item.book.id)}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Rating and notes display */}
-                      {item.userRating && (
-                        <div className="mt-2">
-                          <StarRating value={item.userRating} readonly size="sm" />
-                        </div>
-                      )}
-                      {item.userNotes && (
-                        <p className="mt-2 text-sm text-neutral-600 italic line-clamp-2 bg-neutral-50 rounded-lg px-3 py-2">
-                          &ldquo;{item.userNotes}&rdquo;
-                        </p>
-                      )}
-
-                      {/* Actions */}
-                      <div className="mt-3 flex gap-2 flex-wrap">
-                        {item.status !== 'READ' && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleUpdateStatus(item.book.id, 'READ')}
-                          >
-                            Mark as Read
-                          </Button>
+                        <h3 className="font-semibold text-[#1f1a17]">
+                          {item.book.title}
+                        </h3>
+                        {item.book.author && (
+                          <p className="text-sm text-neutral-500">{item.book.author}</p>
                         )}
+                      </div>
+
+                      {/* Edit - hover only, icon style */}
+                      {editingId !== item.book.id && (
                         <button
                           onClick={() => startEdit(item)}
-                          className="text-sm text-neutral-500 hover:text-[#1f1a17] transition-colors"
+                          className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-neutral-500 transition-all p-1"
+                          title={hasReflection ? 'Edit note' : 'Add note'}
                         >
-                          {item.userRating || item.userNotes ? 'Edit' : 'Add rating/notes'}
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                          </svg>
                         </button>
+                      )}
+                    </div>
+
+                    {/* Edit mode */}
+                    {editingId === item.book.id ? (
+                      <div className="mt-4 space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1.5">
+                            {primarySource}&apos;s note
+                          </label>
+                          <textarea
+                            value={editNotes}
+                            onChange={(e) => setEditNotes(e.target.value)}
+                            className="w-full px-4 py-3 text-sm bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
+                            rows={3}
+                            placeholder="Why did this book matter?"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleSaveEdit(item.book.id)}>
+                            Save
+                          </Button>
+                          <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        {/* Reflection display - framed with label */}
+                        {hasReflection && (
+                          <div className="mt-3">
+                            <p className="text-xs text-neutral-400 mb-1">
+                              {primarySource}&apos;s note
+                            </p>
+                            <p className="text-sm text-neutral-600 leading-relaxed line-clamp-3">
+                              {cleanedNotes}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Status action - only if not read */}
+                        {item.status !== 'READ' && (
+                          <div className="mt-3">
+                            <button
+                              onClick={() => handleUpdateStatus(item.book.id, 'READ')}
+                              className="text-xs text-neutral-400 hover:text-[#1f1a17] transition-colors"
+                            >
+                              Mark as read
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      )}
+
+      {/* Why am I seeing this? - trust affordance */}
+      {!isEmpty && (
+        <details className="mt-10 group">
+          <summary className="text-xs text-neutral-400 hover:text-neutral-600 cursor-pointer transition-colors">
+            Why these books?
+          </summary>
+          <div className="mt-3 p-4 bg-neutral-50 rounded-xl text-sm text-neutral-500 leading-relaxed">
+            <p>
+              These are the only books {primarySource} rated five stars. Nothing else appears here.
+            </p>
+            <p className="mt-2 text-neutral-400">
+              Books with notes have a subtle amber border.
+            </p>
+          </div>
+        </details>
       )}
 
       {/* Link to reflections */}
       {books.filter(b => b.status === 'READ' && b.userRating === 5).length > 0 && (
-        <div className="text-center pt-6">
+        <div className="text-center pt-8">
           <Link
             href="/reflections"
             className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"

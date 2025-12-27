@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/feed', label: 'Feed', icon: '📚' },
-  { href: '/my-books', label: 'Signals', icon: '✦' },
+  { href: '/feed', label: 'Signals', icon: '✦' },
+  { href: '/my-books', label: 'My Books', icon: '📚' },
   { href: '/reflections', label: 'Stayed', icon: '💭' },
   { href: '/top10', label: 'Top 10', icon: '🏆' },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
@@ -16,11 +16,12 @@ const secondaryItems = [
   { href: '/under-the-hood', label: 'How It Works', icon: '◇' },
 ];
 
-export function Sidebar() {
+// Sidebar content (used inside layout's sticky aside)
+export function SidebarContent() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex w-56 min-h-screen bg-[#faf8f5] border-r border-black/5 flex-col">
+    <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-black/5">
         <Link href="/feed" className="flex items-center gap-3 no-underline group">
@@ -85,7 +86,7 @@ export function Sidebar() {
           Made with care
         </p>
       </div>
-    </aside>
+    </div>
   );
 }
 

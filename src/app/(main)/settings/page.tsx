@@ -178,7 +178,7 @@ export default function SettingsPage() {
               Identity
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              Who uses this app and whose taste it shows.
+              One person reads. Another person&apos;s taste shapes the recommendations.
             </p>
           </div>
 
@@ -186,7 +186,7 @@ export default function SettingsPage() {
             {/* Account holder */}
             <div>
               <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
-                Account
+                Who uses this app
               </p>
               <input
                 type="text"
@@ -196,25 +196,22 @@ export default function SettingsPage() {
                 className="w-full h-11 px-4 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 focus:border-transparent transition-all"
               />
               <p className="text-xs text-neutral-400 mt-2">
-                This is who uses the app.
+                The person browsing and discovering.
               </p>
             </div>
 
             {/* Recommendation credit - shows source of taste */}
             <div className="pt-4 border-t border-black/5">
               <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
-                Recommendation credit
+                Whose taste shapes recommendations
               </p>
               <div className="flex items-center gap-3 h-11 px-4 bg-amber-50/50 rounded-xl border border-amber-100">
                 <span className="text-[15px] font-medium text-[#1f1a17]">
                   Laura
                 </span>
-                <span className="text-xs text-neutral-400">
-                  (imported from Goodreads)
-                </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-2">
-                Whose taste appears on recommendations. &ldquo;Loved by Laura&rdquo;
+              <p className="text-xs text-neutral-500 mt-2">
+                Appears as: <span className="text-amber-600 font-medium">&ldquo;Loved by Laura&rdquo;</span>
               </p>
             </div>
 
@@ -232,25 +229,28 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Reading history - shows import source */}
+        {/* Reading history - shows import source as provenance */}
         <section className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
           <div className="p-6 pb-0">
             <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
-              Reading history
+              Source of truth
             </h2>
             <p className="text-sm text-neutral-500 leading-relaxed">
-              Where your signals come from.
+              Where recommendations come from.
             </p>
           </div>
 
           <div className="p-6">
-            <div className="flex items-start justify-between gap-6 p-4 bg-neutral-50 rounded-xl">
+            <div className="flex items-start justify-between gap-6 p-4 bg-[#faf8f5] rounded-xl border border-[#f0ebe3]">
               <div className="flex-1">
-                <p className="text-[15px] font-medium text-[#1f1a17] mb-0.5">
-                  Goodreads import
+                <p className="text-[15px] font-medium text-[#1f1a17] mb-1">
+                  Goodreads library
                 </p>
-                <p className="text-sm text-neutral-500">
-                  Laura&apos;s reading history imported via CSV
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Laura&apos;s reading history, imported via CSV.
+                </p>
+                <p className="text-xs text-neutral-400 mt-2 italic">
+                  No ratings were changed. Only 5-stars appear.
                 </p>
               </div>
               <a
@@ -291,7 +291,7 @@ export default function SettingsPage() {
             <ToggleRow
               id="notify-sms"
               label="Text me about exceptional picks"
-              description="Reserved for books that truly stand out."
+              description="Fewer than a handful per year. Reserved for books that truly stand out."
               checked={notifySms}
               onChange={setNotifySms}
             />
@@ -384,7 +384,10 @@ export default function SettingsPage() {
       </div>
 
       {/* Quiet footer note */}
-      <footer className="mt-16 mb-4 text-center">
+      <footer className="mt-16 mb-4 text-center space-y-3">
+        <p className="text-sm text-neutral-400">
+          You can change any of this later.
+        </p>
         <p className="text-sm text-neutral-300 italic">
           GreatReads is built to stay out of the way.
         </p>

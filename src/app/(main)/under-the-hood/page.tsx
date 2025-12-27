@@ -28,15 +28,20 @@ export default function UnderTheHoodPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
       {/* ═══════════════════════════════════════════════════════════════════
-          1. OPENING FRAMING - why this page exists
+          1. OPENING FRAMING - TL;DR first
       ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-16">
         <h1 className="text-2xl font-semibold text-[#1f1a17] mb-4">
           How GreatReads Works
         </h1>
-        <p className="text-[15px] text-neutral-500 leading-relaxed mb-6">
-          A short explanation of what&apos;s happening behind the scenes — without the noise.
-        </p>
+
+        {/* TL;DR for skimmers */}
+        <div className="bg-[#faf8f5] rounded-xl p-5 border border-[#f0ebe3] mb-8">
+          <p className="text-[15px] text-neutral-600 leading-relaxed">
+            GreatReads keeps only the strongest signals and ignores everything else — so recommendations stay personal, rare, and meaningful.
+          </p>
+        </div>
+
         <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
           GreatReads is intentionally simple on the surface.
           Underneath, it&apos;s doing a few very specific things — and not doing many others — to keep recommendations meaningful.
@@ -70,6 +75,9 @@ export default function UnderTheHoodPage() {
               <p className="text-sm text-neutral-500 leading-relaxed">
                 Explicit, intentional choices — the strongest signal of all.
               </p>
+              <p className="text-xs text-neutral-400 italic mt-1">
+                Someone chose this over every other book they&apos;ve read.
+              </p>
             </div>
           </div>
 
@@ -79,6 +87,9 @@ export default function UnderTheHoodPage() {
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Written reflections</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
                 If someone took the time to write about a book, it likely stuck with them.
+              </p>
+              <p className="text-xs text-neutral-400 italic mt-1">
+                They didn&apos;t just finish it. They thought about it later.
               </p>
             </div>
           </div>
@@ -90,6 +101,9 @@ export default function UnderTheHoodPage() {
               <p className="text-sm text-neutral-500 leading-relaxed">
                 Books that stay important long after they&apos;re read. Count even if the rating is old.
               </p>
+              <p className="text-xs text-neutral-400 italic mt-1">
+                Books that stayed important even after the moment passed.
+              </p>
             </div>
           </div>
 
@@ -99,6 +113,9 @@ export default function UnderTheHoodPage() {
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">5-star ratings</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
                 When someone gives a book their highest rating, that&apos;s a signal of impact.
+              </p>
+              <p className="text-xs text-neutral-400 italic mt-1">
+                Their highest possible endorsement.
               </p>
             </div>
           </div>
@@ -127,7 +144,7 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Overall popularity</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Popularity measures agreement. GreatReads cares about resonance.
+                Popularity measures agreement. <span className="text-neutral-600 font-medium">Resonance measures impact.</span>
               </p>
             </div>
           </div>
@@ -137,7 +154,7 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Algorithms based on strangers</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Recommendations only come from people you choose to trust.
+                Recommendations only come from people you choose to trust. <span className="text-neutral-600 font-medium">No one else.</span>
               </p>
             </div>
           </div>
@@ -147,7 +164,7 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Average ratings</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Averages flatten taste. GreatReads preserves it.
+                Averages flatten taste. <span className="text-neutral-600 font-medium">Individual taste is the point.</span>
               </p>
             </div>
           </div>
@@ -157,22 +174,22 @@ export default function UnderTheHoodPage() {
             <div>
               <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Reading speed, streaks, or goals</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                This app doesn&apos;t treat reading as productivity. Only as experience.
+                This app doesn&apos;t treat reading as productivity. <span className="text-neutral-600 font-medium">Only as experience.</span>
               </p>
             </div>
           </div>
         </div>
 
-        {/* Not optimizing for callout */}
-        <div className="mt-8 bg-neutral-50 rounded-xl p-5">
-          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
+        {/* Not optimizing for callout - distinct treatment */}
+        <div className="mt-10 bg-[#1f1a17] text-white rounded-xl p-6">
+          <p className="text-xs font-medium text-white/60 uppercase tracking-wide mb-3">
             GreatReads is not optimized for
           </p>
-          <p className="text-sm text-neutral-600 leading-relaxed">
+          <p className="text-[15px] leading-relaxed opacity-90">
             Engagement · Daily usage · Completion · Growth loops
           </p>
-          <p className="text-sm text-neutral-600 mt-2">
-            It&apos;s optimized for <span className="font-medium">trust</span>.
+          <p className="text-[15px] mt-3">
+            It&apos;s optimized for <span className="font-semibold">trust</span>.
           </p>
         </div>
       </section>
@@ -262,11 +279,14 @@ export default function UnderTheHoodPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          CLOSING LINE
+          CLOSING LINE - grounding sentence
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16 text-center">
+      <section className="mb-16 text-center space-y-4">
         <p className="text-[15px] text-neutral-600 leading-relaxed italic">
           If a book shows up here, it&apos;s because it earned its place.
+        </p>
+        <p className="text-sm text-neutral-500 leading-relaxed">
+          The result is a small, quiet library you can trust — because it only contains books that truly mattered to someone you chose.
         </p>
       </section>
 
