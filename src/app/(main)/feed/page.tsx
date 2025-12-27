@@ -51,23 +51,14 @@ const marksFavorites = [
   },
 ];
 
-// Preview books for empty state
-const previewBooks = [
-  {
-    title: 'Tomorrow, and Tomorrow, and Tomorrow',
-    author: 'Gabrielle Zevin',
-    friend: 'Sarah',
-    quote: 'This one stayed with me for weeks.',
-    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780593321201-M.jpg',
-  },
-  {
-    title: 'Project Hail Mary',
-    author: 'Andy Weir',
-    friend: 'Mike',
-    quote: "Couldn't put it down. Finished in two days.",
-    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780593135204-M.jpg',
-  },
-];
+// Preview book for empty state (just one, cleaner)
+const previewBook = {
+  title: 'Tomorrow, and Tomorrow, and Tomorrow',
+  author: 'Gabrielle Zevin',
+  friend: 'Sarah',
+  quote: 'This one stayed with me for weeks.',
+  coverUrl: 'https://covers.openlibrary.org/b/isbn/9780593321201-M.jpg',
+};
 
 export default function FeedPage() {
   const [events, setEvents] = useState<FeedEvent[]>([]);
@@ -137,7 +128,7 @@ export default function FeedPage() {
   const hasNoSources = sources.length === 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-12">
       {/* One-time welcome message for first visit */}
       <WelcomeMessage />
 
@@ -145,62 +136,62 @@ export default function FeedPage() {
           HERO: Single clear moment with gravity
       ═══════════════════════════════════════════════════════════════════ */}
       {hasNoSources && (
-        <section className="mb-24">
+        <section className="mb-32">
           {/* Hero - artifact, not landing page */}
-          <header className="text-center mb-20">
+          <header className="text-center mb-24">
             <h1 className="text-4xl font-semibold text-[#1f1a17] mb-4 font-serif">
               Made for Mark
             </h1>
-            <p className="text-lg text-neutral-500 mb-4">
+            <p className="text-lg text-neutral-500">
               A quiet place to discover books through people you trust.
-            </p>
-            <p className="text-xs text-neutral-300">
-              Created December 2025
             </p>
           </header>
 
-          {/* Personal shelf - declarative, not browsable */}
-          <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl p-10 shadow-sm">
-            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2 text-center">
-              Books that shaped how Mark thinks
-            </p>
-            <p className="text-xs text-neutral-400 text-center mb-8">
-              A short list, not a feed
-            </p>
+          {/* Personal canon - the emotional anchor */}
+          <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-3xl px-12 pt-10 pb-12 shadow-sm">
+            {/* Label - deliberate framing */}
+            <div className="text-center mb-10">
+              <p className="text-sm font-medium text-[#1f1a17] tracking-wide mb-1">
+                Personal canon
+              </p>
+              <p className="text-xs text-neutral-400">
+                Not recommendations. Not a feed.
+              </p>
+            </div>
 
-            {/* Shelf with covers */}
-            <div className="flex justify-center gap-8">
+            {/* Shelf with covers - larger, more presence */}
+            <div className="flex justify-center gap-10">
               {marksFavorites.map((book) => (
                 <div
                   key={book.title}
                   className="group flex-shrink-0 text-center"
                 >
-                  {/* Cover with hover reflection */}
-                  <div className="relative mb-4">
+                  {/* Cover with depth and hover delight */}
+                  <div className="relative mb-5">
                     <img
                       src={book.coverUrl}
                       alt={book.title}
-                      className="w-24 h-36 object-cover rounded-lg shadow-lg transition-all duration-200 group-hover:shadow-xl group-hover:-translate-y-1"
+                      className="w-28 h-[168px] object-cover rounded-lg shadow-xl transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-1"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         target.nextElementSibling?.classList.remove('hidden');
                       }}
                     />
-                    <div className="hidden w-24 h-36 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg shadow-lg flex items-center justify-center">
+                    <div className="hidden w-28 h-[168px] bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg shadow-xl flex items-center justify-center">
                       <span className="text-3xl">📕</span>
                     </div>
 
-                    {/* Hover tooltip - why it mattered */}
+                    {/* Hover reveal - "This stayed with me" */}
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                      <div className="bg-[#1f1a17] text-white text-xs px-3 py-2 rounded-lg shadow-lg max-w-[160px] text-center">
-                        {book.why}
-                      </div>
+                      <p className="text-xs text-neutral-400 italic whitespace-nowrap">
+                        This stayed with me.
+                      </p>
                     </div>
                   </div>
 
                   {/* Title and author */}
-                  <div className="max-w-[100px] mx-auto">
+                  <div className="max-w-[112px] mx-auto">
                     <p className="text-sm font-medium text-[#1f1a17] leading-tight line-clamp-2">
                       {book.title}
                     </p>
@@ -216,24 +207,24 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HOW THE FEED WORKS - with visual break
+          HOW THE FEED WORKS - breathing room, clear sections
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-20">
-        {/* Visual break / divider */}
-        {hasNoSources && (
-          <div className="border-t border-black/5 mb-12" />
-        )}
-
-        {/* Section header - smaller, why-focused */}
-        <div className="mb-8">
+      <section className="mb-24">
+        {/* Section header - tighter, firmer copy */}
+        <div className="mb-12">
           <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
             {hasNoSources ? 'Why books appear here' : 'Your feed'}
           </p>
           <p className="text-[17px] text-neutral-600 leading-relaxed max-w-md">
             {hasNoSources
-              ? 'Only books someone you trust loved enough to rate five stars.'
+              ? 'Only books someone you trust chose to give five stars.'
               : 'Books your friends loved enough to rate five stars.'}
           </p>
+          {hasNoSources && (
+            <p className="text-[15px] text-neutral-400 mt-2">
+              Nothing popular. Nothing trending.
+            </p>
+          )}
         </div>
 
         {/* Friend sources - quiet pills */}
@@ -288,72 +279,64 @@ export default function FeedPage() {
             </div>
           ) : hasNoSources ? (
             /* Empty state - focused on Import */
-            <div className="space-y-16">
-              {/* Import CTA - primary path */}
-              <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-8">
-                <h3 className="text-lg font-semibold text-[#1f1a17] mb-2">
+            <div className="space-y-20">
+              {/* Import invitation - softer container, human first */}
+              <div className="bg-[#fdfcfa] rounded-3xl border border-[#f0ebe3] p-10">
+                <h3 className="text-xl font-semibold text-[#1f1a17] mb-3">
                   Bring in your Goodreads history
                 </h3>
-                <p className="text-[15px] text-neutral-500 leading-relaxed mb-6">
+                <p className="text-[15px] text-neutral-500 leading-relaxed mb-8 max-w-md">
                   GreatReads doesn&apos;t guess what mattered. If you&apos;ve already rated books elsewhere, you can import that history with your permission.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
                   <Link href="/import">
-                    <Button size="lg">Import Goodreads CSV</Button>
+                    <Button size="lg">Bring my reading history</Button>
                   </Link>
-                  <Link href="/import">
-                    <Button variant="secondary" size="lg">How to export from Goodreads</Button>
+                  <Link
+                    href="/import"
+                    className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors py-2"
+                  >
+                    How to export from Goodreads →
                   </Link>
                 </div>
               </div>
 
               {/* ═══════════════════════════════════════════════════════════
-                  PREVIEW: When this starts working
-                  Visually distinct from real content
+                  PREVIEW: Single example, clearly framed
               ═══════════════════════════════════════════════════════════ */}
-              <div className="bg-neutral-50/50 rounded-2xl p-8 border border-neutral-100">
-                <div className="mb-6">
-                  <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
-                    Example
-                  </p>
-                  <p className="text-sm text-neutral-500">
-                    This is what it looks like when someone you trust loves a book.
-                  </p>
-                </div>
-                <div className="space-y-6 opacity-80">
-                  {previewBooks.map((book) => (
-                    <div
-                      key={book.title}
-                      className="flex gap-5 p-5 bg-white rounded-xl border border-black/5"
-                    >
-                      {/* Book cover */}
-                      <div className="flex-shrink-0">
-                        <img
-                          src={book.coverUrl}
-                          alt={book.title}
-                          className="w-14 h-20 object-cover rounded-md shadow-sm"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                        <div className="hidden w-14 h-20 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-md flex items-center justify-center">
-                          <span className="text-xl">📕</span>
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-[#1f1a17] mb-0.5">{book.title}</h3>
-                        <p className="text-sm text-neutral-400 mb-3">{book.author}</p>
-                        <p className="text-sm text-neutral-500 italic leading-relaxed mb-3">
-                          &ldquo;{book.quote}&rdquo;
-                        </p>
-                        <p className="text-xs text-neutral-400">
-                          <span className="text-amber-500">★</span> {book.friend} loved this
-                        </p>
+              <div>
+                <p className="text-xs font-medium text-neutral-300 uppercase tracking-wide mb-4">
+                  What this will look like
+                </p>
+                <div className="bg-neutral-50/70 rounded-2xl p-6 border border-neutral-100/80">
+                  <div className="flex gap-5 p-5 bg-white rounded-xl border border-black/5 opacity-90">
+                    {/* Book cover */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src={previewBook.coverUrl}
+                        alt={previewBook.title}
+                        className="w-14 h-20 object-cover rounded-md shadow-sm"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-14 h-20 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-md flex items-center justify-center">
+                        <span className="text-xl">📕</span>
                       </div>
                     </div>
-                  ))}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-[#1f1a17] mb-0.5">{previewBook.title}</h3>
+                      <p className="text-sm text-neutral-400 mb-3">{previewBook.author}</p>
+                      <p className="text-sm text-neutral-500 italic leading-relaxed mb-3">
+                        &ldquo;{previewBook.quote}&rdquo;
+                      </p>
+                      <p className="text-xs text-neutral-400">
+                        <span className="text-amber-500">★</span> {previewBook.friend} loved this
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -391,7 +374,7 @@ export default function FeedPage() {
           SECONDARY PATH - quiet, optional
       ═══════════════════════════════════════════════════════════════════ */}
       {hasNoSources && (
-        <aside className="max-w-md mx-auto text-center">
+        <aside className="max-w-md mx-auto text-center mb-16">
           <Link
             href="/top10"
             className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
@@ -402,12 +385,9 @@ export default function FeedPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          FOOTER - emotional close
+          FOOTER - dedication with timestamp
       ═══════════════════════════════════════════════════════════════════ */}
-      <footer className="mt-24 pt-8 border-t border-black/5 text-center space-y-2">
-        <p className="text-sm text-neutral-400">
-          Made with care.
-        </p>
+      <footer className="pt-8 border-t border-black/5 text-center">
         <p className="text-xs text-neutral-300 italic">
           — Laura, December 2025
         </p>
