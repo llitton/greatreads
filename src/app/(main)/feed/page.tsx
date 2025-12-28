@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { FeedCard } from '@/components/feed/feed-card';
 import { Button } from '@/components/ui/button';
-import { WelcomeMessage } from '@/components/welcome-message';
 import Link from 'next/link';
 
 interface FeedEvent {
@@ -132,9 +131,6 @@ export default function FeedPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-      {/* One-time welcome message for first visit */}
-      <WelcomeMessage />
-
       {/* ═══════════════════════════════════════════════════════════════════
           HERO: Single clear moment with gravity
       ═══════════════════════════════════════════════════════════════════ */}
