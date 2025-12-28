@@ -19,38 +19,40 @@ export function MainLayout({
   onAddFriend
 }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#faf8f5]">
-      {/* Desktop: 3-column grid layout */}
-      <div className={`hidden lg:grid lg:gap-0 ${
+    <div className="h-screen bg-[#faf8f5] overflow-hidden">
+      {/* Desktop: 3-column grid layout with isolated scroll zones */}
+      <div className={`hidden lg:grid h-full ${
         showRightSidebar
           ? 'lg:grid-cols-[220px_1fr_300px]'
           : 'lg:grid-cols-[220px_1fr]'
       }`}>
-        {/* Left nav - sticky */}
-        <aside className="sticky top-0 self-start h-screen border-r border-black/5 bg-[#faf8f5]">
+        {/* Left nav - fixed, own scroll */}
+        <aside className="h-full border-r border-black/5 bg-[#faf8f5] overflow-y-auto">
           <SidebarContent />
         </aside>
 
-        {/* Main content area */}
-        <div className="min-w-0 flex flex-col">
+        {/* Main content area - scrolls independently */}
+        <div className="h-full flex flex-col min-w-0 overflow-hidden">
           {showTopBar && <TopBar onAddFriend={onAddFriend} />}
-          <main className="flex-1 p-6 lg:p-8">
-            <div className="max-w-3xl mx-auto">
-              {children}
+          <main className="flex-1 overflow-y-auto">
+            <div className="p-6 lg:p-8">
+              <div className="max-w-3xl mx-auto">
+                {children}
+              </div>
             </div>
           </main>
         </div>
 
-        {/* Right sidebar - sticky, ambient RSS */}
+        {/* Right sidebar - fixed, own scroll */}
         {showRightSidebar && (
-          <aside className="sticky top-0 self-start h-screen border-l border-black/5 bg-[#fdfcfa] overflow-y-auto">
+          <aside className="h-full border-l border-black/5 overflow-hidden">
             <RightSidebar />
           </aside>
         )}
       </div>
 
       {/* Mobile: stacked layout (no right sidebar) */}
-      <div className="lg:hidden">
+      <div className="lg:hidden h-full overflow-y-auto">
         {showTopBar && <TopBar onAddFriend={onAddFriend} />}
         <main className="p-6 pb-24">
           <div className="max-w-4xl mx-auto">

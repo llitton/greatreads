@@ -1,321 +1,224 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 
-// Literary Easter eggs - one appears each day
-const literaryQuotes = [
-  'Books are mirrors: you only see in them what you already have inside you.',
-  'The books that matter most often take years to understand.',
-  'A reader lives a thousand lives before he dies.',
-  'Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.',
-  'The best books are those that tell you what you already know.',
-  'Reading is an act of civilization; it\'s one of the greatest acts of civilization.',
-  'Books are a uniquely portable magic.',
-];
-
 export default function UnderTheHoodPage() {
-  const [showMore, setShowMore] = useState(false);
-
-  // Pick today's quote based on day of year
-  const todaysQuote = useMemo(() => {
-    const dayOfYear = Math.floor(
-      (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
-    );
-    return literaryQuotes[dayOfYear % literaryQuotes.length];
-  }, []);
+  const [showDetails, setShowDetails] = useState<string | null>(null);
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
       {/* ═══════════════════════════════════════════════════════════════════
-          1. OPENING FRAMING - TL;DR first
+          ANCHOR - One sentence that captures everything
       ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-16">
-        <h1 className="text-2xl font-semibold text-[#1f1a17] mb-4">
+        <h1 className="text-2xl font-semibold text-[#1f1a17] mb-6">
           How GreatReads Works
         </h1>
 
-        {/* TL;DR for skimmers */}
-        <div className="bg-[#faf8f5] rounded-xl p-5 border border-[#f0ebe3] mb-8">
-          <p className="text-[15px] text-neutral-600 leading-relaxed">
-            GreatReads keeps only the strongest signals and ignores everything else — so recommendations stay personal, rare, and meaningful.
-          </p>
-        </div>
+        {/* The anchor */}
+        <p className="text-lg text-[#1f1a17] leading-relaxed mb-3">
+          GreatReads keeps only the strongest signals of taste.
+          <br />
+          Everything else is intentionally ignored.
+        </p>
 
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-          GreatReads is intentionally simple on the surface.
-          Underneath, it&apos;s doing a few very specific things — and not doing many others — to keep recommendations meaningful.
-        </p>
-        <p className="text-sm text-neutral-400 italic">
-          This page exists for people who like to understand systems, tradeoffs, and intent.
-        </p>
+        {/* Expandable details */}
+        <details className="group">
+          <summary className="text-sm text-neutral-400 cursor-pointer hover:text-neutral-600 transition-colors list-none flex items-center gap-1.5">
+            <span className="text-xs group-open:rotate-90 transition-transform">›</span>
+            What does that mean?
+          </summary>
+          <div className="mt-4 pl-4 border-l-2 border-neutral-100 space-y-3 text-sm text-neutral-500 leading-relaxed">
+            <p>Most reading apps optimize for engagement — more books, more activity, more time spent.</p>
+            <p>GreatReads optimizes for trust. It shows you only what someone you chose to follow cared enough to signal as meaningful.</p>
+            <p>The result: fewer books, but ones worth paying attention to.</p>
+          </div>
+        </details>
       </header>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          2. WHAT COUNTS AS A STRONG SIGNAL (ordered by weight)
+          SIGNAL TIERS - Visual hierarchy by weight
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
+        <h2 className="text-lg font-semibold text-[#1f1a17] mb-2">
           What counts as a strong signal
         </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-          GreatReads doesn&apos;t try to understand all reading behavior.
-          It looks for a small number of signals that usually mean:
-          <span className="italic"> &ldquo;This book mattered to me.&rdquo;</span>
-        </p>
         <p className="text-sm text-neutral-400 mb-8">
-          From strongest to weakest:
+          From strongest to weakest — effort correlates with meaning.
         </p>
 
-        <div className="space-y-6">
-          <div className="flex gap-4">
-            <span className="text-lg flex-shrink-0 w-6">◆</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Top 10 lists</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                Explicit, intentional choices — the strongest signal of all.
-              </p>
-              <p className="text-xs text-neutral-400 italic mt-1">
-                Someone chose this over every other book they&apos;ve read.
-              </p>
+        {/* Top tier */}
+        <div className="mb-8">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
+            Highest weight
+          </p>
+          <div className="space-y-4">
+            <div className="flex gap-4 p-4 bg-[#faf8f5] rounded-xl border border-[#f0ebe3]">
+              <span className="text-xl flex-shrink-0 w-8">◆</span>
+              <div>
+                <p className="text-[15px] text-[#1f1a17] font-medium">Top 10 lists</p>
+                <p className="text-sm text-neutral-500">Someone chose this over every other book they&apos;ve read.</p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex gap-4">
-            <span className="text-lg flex-shrink-0 w-6">✎</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Written reflections</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                If someone took the time to write about a book, it likely stuck with them.
-              </p>
-              <p className="text-xs text-neutral-400 italic mt-1">
-                They didn&apos;t just finish it. They thought about it later.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <span className="text-lg flex-shrink-0 w-6">♥</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Favorites</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                Books that stay important long after they&apos;re read. Count even if the rating is old.
-              </p>
-              <p className="text-xs text-neutral-400 italic mt-1">
-                Books that stayed important even after the moment passed.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <span className="text-lg flex-shrink-0 w-6">★</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">5-star ratings</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                When someone gives a book their highest rating, that&apos;s a signal of impact.
-              </p>
-              <p className="text-xs text-neutral-400 italic mt-1">
-                Their highest possible endorsement.
-              </p>
+            <div className="flex gap-4 p-4 bg-[#faf8f5] rounded-xl border border-[#f0ebe3]">
+              <span className="text-xl flex-shrink-0 w-8">✎</span>
+              <div>
+                <p className="text-[15px] text-[#1f1a17] font-medium">Written reflections</p>
+                <p className="text-sm text-neutral-500">They didn&apos;t just finish it. They thought about it later.</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <p className="text-sm text-neutral-400 italic mt-8">
-          The more effort a signal requires, the more weight it carries.
-        </p>
+        {/* Strong signals */}
+        <div>
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
+            Strong signals
+          </p>
+          <div className="space-y-3">
+            <div className="flex gap-4 p-3 rounded-xl">
+              <span className="text-lg flex-shrink-0 w-8 text-neutral-400">♥</span>
+              <div>
+                <p className="text-[15px] text-[#1f1a17] font-medium">Favorites</p>
+                <p className="text-sm text-neutral-500">Books that stayed important even after the moment passed.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 p-3 rounded-xl">
+              <span className="text-lg flex-shrink-0 w-8 text-amber-500">★</span>
+              <div>
+                <p className="text-[15px] text-[#1f1a17] font-medium">5-star ratings</p>
+                <p className="text-sm text-neutral-500">Their highest possible endorsement.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          3. WHAT THE APP IGNORES - as axioms
+          WHAT WE IGNORE - Axioms
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
-          What GreatReads ignores on purpose
+        <h2 className="text-lg font-semibold text-[#1f1a17] mb-2">
+          What GreatReads ignores
         </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-8">
-          Many reading apps try to do too much.
-          GreatReads is opinionated about what it leaves out.
+        <p className="text-sm text-neutral-400 mb-8">
+          These are intentional omissions, not missing features.
         </p>
 
-        <div className="space-y-6">
-          <div className="flex gap-4">
-            <span className="text-neutral-300 flex-shrink-0 w-6">✗</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Overall popularity</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                Popularity measures agreement. <span className="text-neutral-600 font-medium">Resonance measures impact.</span>
-              </p>
+        <div className="space-y-4">
+          {[
+            { title: 'Popularity', why: 'Popularity measures agreement. Resonance measures impact.' },
+            { title: 'Algorithms based on strangers', why: 'Recommendations only come from people you choose to trust.' },
+            { title: 'Average ratings', why: 'Averages flatten taste. Individual taste is the point.' },
+            { title: 'Reading speed, streaks, or goals', why: 'This app treats reading as experience, not productivity.' },
+          ].map((item) => (
+            <div key={item.title} className="flex gap-4">
+              <span className="text-neutral-300 flex-shrink-0 w-6">✗</span>
+              <div>
+                <p className="text-[15px] text-[#1f1a17] font-medium">{item.title}</p>
+                <p className="text-sm text-neutral-500">{item.why}</p>
+              </div>
             </div>
-          </div>
-
-          <div className="flex gap-4">
-            <span className="text-neutral-300 flex-shrink-0 w-6">✗</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Algorithms based on strangers</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                Recommendations only come from people you choose to trust. <span className="text-neutral-600 font-medium">No one else.</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <span className="text-neutral-300 flex-shrink-0 w-6">✗</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Average ratings</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                Averages flatten taste. <span className="text-neutral-600 font-medium">Individual taste is the point.</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <span className="text-neutral-300 flex-shrink-0 w-6">✗</span>
-            <div>
-              <p className="text-[15px] text-[#1f1a17] font-medium mb-1">Reading speed, streaks, or goals</p>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                This app doesn&apos;t treat reading as productivity. <span className="text-neutral-600 font-medium">Only as experience.</span>
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Not optimizing for callout - distinct treatment */}
+        {/* Optimized for trust callout */}
         <div className="mt-10 bg-[#1f1a17] text-white rounded-xl p-6">
-          <p className="text-xs font-medium text-white/60 uppercase tracking-wide mb-3">
-            GreatReads is not optimized for
+          <p className="text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+            Not optimized for
           </p>
-          <p className="text-[15px] leading-relaxed opacity-90">
+          <p className="text-[15px] leading-relaxed text-white/80">
             Engagement · Daily usage · Completion · Growth loops
           </p>
-          <p className="text-[15px] mt-3">
-            It&apos;s optimized for <span className="font-semibold">trust</span>.
+          <p className="text-[15px] mt-3 text-white">
+            Optimized for <span className="font-semibold">trust</span>.
           </p>
         </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          IMPORT - Framed as permissioned memory
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="mb-16">
+        <h2 className="text-lg font-semibold text-[#1f1a17] mb-2">
+          How books get here
+        </h2>
+        <p className="text-sm text-neutral-400 mb-6">
+          Import is the engine — but only with your permission.
+        </p>
+
+        <div className="bg-[#faf8f5] rounded-2xl p-6 border border-[#f0ebe3] mb-6">
+          <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
+            Importing tells GreatReads what mattered to you — nothing more.
+          </p>
+          <ul className="space-y-2 text-sm text-neutral-500">
+            <li className="flex gap-2">
+              <span className="text-neutral-400">→</span>
+              No averages. No popularity. No recency bias.
+            </li>
+            <li className="flex gap-2">
+              <span className="text-neutral-400">→</span>
+              Your 5-stars become visible to friends (if you choose)
+            </li>
+            <li className="flex gap-2">
+              <span className="text-neutral-400">→</span>
+              Your favorites populate &ldquo;Stayed&rdquo;
+            </li>
+          </ul>
+          <Link href="/import" className="inline-block mt-4 text-sm text-[#1f1a17] hover:underline">
+            Import your library →
+          </Link>
+        </div>
+
+        <p className="text-sm text-neutral-500 leading-relaxed">
+          If someone you follow has read 40 books, you might see only one — or none — of them. That&apos;s intentional.
+        </p>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           TIME MATTERS
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
+        <h2 className="text-lg font-semibold text-[#1f1a17] mb-4">
           Time matters
         </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-          GreatReads doesn&apos;t rush.
-        </p>
         <p className="text-[15px] text-neutral-600 leading-relaxed">
-          Books can surface months or years after someone reads them — when they&apos;re still being thought about. This connects directly to the &ldquo;Books that stayed with me&rdquo; philosophy.
+          Books can surface months or years after someone reads them — when they&apos;re still being thought about.
+        </p>
+        <p className="text-sm text-neutral-400 mt-3">
+          GreatReads doesn&apos;t rush. It prefers older, meaningful signals over recent noise.
         </p>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          4. HOW BOOKS FLOW INTO YOUR FEED
+          CLOSING
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
-          How books show up here
-        </h2>
-
-        <div className="bg-neutral-50/50 rounded-2xl p-6 mb-6">
-          <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-            GreatReads doesn&apos;t guess what mattered to you.
-          </p>
-          <p className="text-[15px] text-neutral-600 leading-relaxed">
-            If you&apos;ve already taken the time to rate books elsewhere, you can bring that history with you — but only with your permission.
-          </p>
-        </div>
-
-        {/* Import as engine */}
-        <div className="bg-[#faf8f5] rounded-2xl p-6 mb-6 border border-[#f0ebe3]">
-          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
-            Import is the engine
-          </p>
-          <ul className="space-y-2 text-sm text-neutral-500 ml-4">
-            <li>Export your Goodreads library as a CSV</li>
-            <li>Import it into GreatReads</li>
-            <li>Your 5-stars become visible to friends (if you choose)</li>
-            <li>Your favorites populate &ldquo;Stayed With Me&rdquo;</li>
-          </ul>
-          <div className="mt-4">
-            <a href="/import" className="text-sm text-[#1f1a17] hover:underline">
-              Import your library →
-            </a>
-          </div>
-        </div>
-
-        {/* Concrete example */}
-        <div className="bg-neutral-50/50 rounded-2xl p-6 border border-neutral-100">
-          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
-            Example
-          </p>
-          <p className="text-sm text-neutral-600 leading-relaxed">
-            If someone you follow has read 40 books, you might see only one — or none — of them. That&apos;s intentional. Only the books that earned strong signals appear.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          5. WHY THIS EXISTS
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-6">
-          Why this exists
-        </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-          This app exists because good recommendations don&apos;t come from volume — they come from taste.
-        </p>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-8">
-          The goal isn&apos;t to read more books.
-          <br />
-          It&apos;s to find the ones that quietly change how you think.
-        </p>
-
-        <p className="text-sm text-neutral-400 italic">
-          — Laura
-          <br />
-          December 2025
-        </p>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          CLOSING LINE - grounding sentence
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16 text-center space-y-4">
-        <p className="text-[15px] text-neutral-600 leading-relaxed italic">
+      <section className="mb-16 text-center py-8 border-y border-black/5">
+        <p className="text-[15px] text-neutral-600 leading-relaxed italic mb-4">
           If a book shows up here, it&apos;s because it earned its place.
         </p>
-        <p className="text-sm text-neutral-500 leading-relaxed">
-          The result is a small, quiet library you can trust — because it only contains books that truly mattered to someone you chose.
+        <p className="text-sm text-neutral-500">
+          The result is a small, quiet library you can trust.
         </p>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          6. MORE CURIOUS? (COLLAPSIBLE)
+          MORE DETAILS (collapsible)
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        <button
-          onClick={() => setShowMore(!showMore)}
-          className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors flex items-center gap-2"
-        >
-          <span className={`transition-transform ${showMore ? 'rotate-90' : ''}`}>›</span>
-          If you&apos;re curious, a little more detail
-        </button>
-
-        {showMore && (
-          <div className="mt-6 pl-4 border-l-2 border-neutral-100 space-y-4 animate-fadeIn">
-            <p className="text-sm text-neutral-500 leading-relaxed">
-              Data is updated periodically, not constantly.
-            </p>
-            <p className="text-sm text-neutral-500 leading-relaxed">
-              The app prefers older, meaningful signals over recent noise.
-            </p>
-            <p className="text-sm text-neutral-500 leading-relaxed">
-              Nothing is shared publicly unless you choose to share it.
-            </p>
-          </div>
-        )}
-      </section>
+      <details className="mb-16 group">
+        <summary className="text-sm text-neutral-400 cursor-pointer hover:text-neutral-600 transition-colors list-none flex items-center gap-1.5">
+          <span className="text-xs group-open:rotate-90 transition-transform">›</span>
+          Technical details
+        </summary>
+        <div className="mt-4 pl-4 border-l-2 border-neutral-100 space-y-3 text-sm text-neutral-500 leading-relaxed">
+          <p>Data is updated periodically, not constantly.</p>
+          <p>Nothing is shared publicly unless you choose to share it.</p>
+          <p>Sources are polled daily for new five-star ratings.</p>
+        </div>
+      </details>
 
       {/* ═══════════════════════════════════════════════════════════════════
           FOOTER
@@ -325,12 +228,12 @@ export default function UnderTheHoodPage() {
           href="/feed"
           className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
         >
-          ← Back to Feed
+          ← Back to Signals
         </Link>
 
-        {/* Literary Easter egg - changes daily */}
-        <p className="mt-12 text-xs text-neutral-300 italic text-center leading-relaxed">
-          &ldquo;{todaysQuote}&rdquo;
+        {/* Meta note */}
+        <p className="mt-12 text-xs text-neutral-300 text-center">
+          This page exists for people who like to understand systems.
         </p>
       </footer>
     </div>
