@@ -35,19 +35,22 @@ const marksFavorites = [
     title: 'White Fragility',
     author: 'Robin DiAngelo',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780807047415-M.jpg',
-    why: 'Changed how I see conversations about race.',
+    lovedBy: 'Laura',
+    note: 'Changed how I see conversations about race.',
   },
   {
     title: 'Thinking, Fast and Slow',
     author: 'Daniel Kahneman',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780374533557-M.jpg',
-    why: 'Made me question every decision I make.',
+    lovedBy: 'Laura',
+    note: 'Made me question every decision I make.',
   },
   {
     title: 'The Art of Happiness',
     author: 'Dalai Lama',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9781573221115-M.jpg',
-    why: 'Simple wisdom that actually stuck.',
+    lovedBy: 'Laura',
+    note: 'Simple wisdom that actually stuck.',
   },
 ];
 
@@ -142,8 +145,11 @@ export default function FeedPage() {
             <h1 className="text-4xl font-semibold text-[#1f1a17] mb-4 font-serif">
               Made for Mark
             </h1>
-            <p className="text-lg text-neutral-500">
+            <p className="text-lg text-neutral-500 mb-2">
               A quiet place to discover books through people you trust.
+            </p>
+            <p className="text-sm text-neutral-400">
+              Books only appear here when someone you trust cared enough to give five stars.
             </p>
           </header>
 
@@ -166,16 +172,8 @@ export default function FeedPage() {
                   key={book.title}
                   className="group relative flex-shrink-0 text-center"
                 >
-                  {/* Tooltip - positioned above cover */}
-                  <div className="pointer-events-none absolute left-1/2 top-0 z-50 hidden -translate-x-1/2 -translate-y-3 group-hover:block">
-                    <div className="rounded-md bg-neutral-900 px-3 py-2 text-xs text-white shadow-lg ring-1 ring-black/10 whitespace-nowrap">
-                      This stayed with me
-                    </div>
-                    <div className="mx-auto h-0 w-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-neutral-900" />
-                  </div>
-
                   {/* Cover with depth and hover delight */}
-                  <div className="relative mb-5">
+                  <div className="relative mb-4">
                     <img
                       src={book.coverUrl}
                       alt={book.title}
@@ -189,15 +187,27 @@ export default function FeedPage() {
                     <div className="hidden w-28 h-[168px] bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg shadow-xl flex items-center justify-center">
                       <span className="text-3xl">📕</span>
                     </div>
+
+                    {/* Hover overlay with note */}
+                    <div className="pointer-events-none absolute inset-0 flex items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-full bg-gradient-to-t from-black/80 via-black/50 to-transparent rounded-b-lg p-3 pt-8">
+                        <p className="text-xs text-white/90 italic leading-relaxed line-clamp-3">
+                          &ldquo;{book.note}&rdquo;
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Title and author */}
+                  {/* Title, author, and attribution - always visible */}
                   <div className="max-w-[112px] mx-auto">
                     <p className="text-sm font-medium text-[#1f1a17] leading-tight line-clamp-2">
                       {book.title}
                     </p>
                     <p className="text-xs text-neutral-400 mt-1 truncate">
                       {book.author}
+                    </p>
+                    <p className="text-xs text-neutral-300 mt-1.5">
+                      Loved by {book.lovedBy}
                     </p>
                   </div>
                 </div>
@@ -280,9 +290,48 @@ export default function FeedPage() {
               ))}
             </div>
           ) : hasNoSources ? (
-            /* Empty state - focused on Import */
-            <div className="space-y-20">
-              {/* Import invitation - human, not technical */}
+            /* Empty state - example first, then import */
+            <div className="space-y-16">
+              {/* ═══════════════════════════════════════════════════════════
+                  EXAMPLE: Shows what value looks like before asking for action
+              ═══════════════════════════════════════════════════════════ */}
+              <div className="pt-4">
+                <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+                  Example from someone you trust
+                </p>
+                <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-sm">
+                  <div className="flex gap-5">
+                    {/* Book cover */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src={previewBook.coverUrl}
+                        alt={previewBook.title}
+                        className="w-16 h-24 object-cover rounded-lg shadow-md"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-16 h-24 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-lg flex items-center justify-center">
+                        <span className="text-xl">📕</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-[#1f1a17] text-lg mb-0.5">{previewBook.title}</h3>
+                      <p className="text-sm text-neutral-400 mb-3">{previewBook.author}</p>
+                      <p className="text-[15px] text-neutral-500 italic leading-relaxed mb-3">
+                        &ldquo;{previewBook.quote}&rdquo;
+                      </p>
+                      <p className="text-sm text-neutral-400">
+                        <span className="text-amber-500">★</span> Loved by {previewBook.friend}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Import invitation - after demonstrating value */}
               <div className="bg-[#fdfcfa] rounded-3xl border border-[#f0ebe3] p-10">
                 <h3 className="text-xl font-semibold text-[#1f1a17] mb-3">
                   Import books that mattered to you
@@ -305,48 +354,6 @@ export default function FeedPage() {
                 <p className="text-xs text-neutral-300 mt-6 italic">
                   Usually done by the person sharing their recommendations.
                 </p>
-              </div>
-
-              {/* ═══════════════════════════════════════════════════════════
-                  PREVIEW: Single example, clearly framed as future state
-              ═══════════════════════════════════════════════════════════ */}
-              <div>
-                <p className="text-xs font-medium text-neutral-300 uppercase tracking-wide mb-2">
-                  When someone you trust adds a book
-                </p>
-                <p className="text-xs text-neutral-400 mb-4">
-                  It shows up like this:
-                </p>
-                <div className="bg-neutral-50/70 rounded-2xl p-6 border border-neutral-100/80">
-                  <div className="flex gap-5 p-5 bg-white rounded-xl border border-black/5 opacity-90">
-                    {/* Book cover */}
-                    <div className="flex-shrink-0">
-                      <img
-                        src={previewBook.coverUrl}
-                        alt={previewBook.title}
-                        className="w-14 h-20 object-cover rounded-md shadow-sm"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
-                      <div className="hidden w-14 h-20 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-md flex items-center justify-center">
-                        <span className="text-xl">📕</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[#1f1a17] mb-0.5">{previewBook.title}</h3>
-                      <p className="text-sm text-neutral-400 mb-3">{previewBook.author}</p>
-                      <p className="text-sm text-neutral-500 italic leading-relaxed mb-3">
-                        &ldquo;{previewBook.quote}&rdquo;
-                      </p>
-                      <p className="text-xs text-neutral-400">
-                        <span className="text-amber-500">★</span> {previewBook.friend} loved this
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           ) : (

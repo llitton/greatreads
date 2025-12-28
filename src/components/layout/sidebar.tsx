@@ -3,11 +3,20 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const navItems = [
+// Discovery section
+const discoveryItems = [
   { href: '/feed', label: 'Signals', icon: '✦' },
   { href: '/my-books', label: 'My Books', icon: '📚' },
+];
+
+// Reflection section
+const reflectionItems = [
   { href: '/reflections', label: 'Stayed', icon: '💭' },
   { href: '/top10', label: 'Top 10', icon: '🏆' },
+];
+
+// Settings
+const settingsItems = [
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
@@ -34,8 +43,63 @@ export function SidebarContent() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4">
+        {/* Discovery section */}
+        <div className="mb-6">
+          <p className="px-4 mb-2 text-[10px] font-medium text-neutral-400 uppercase tracking-wider">
+            Discovery
+          </p>
+          <ul className="space-y-1">
+            {discoveryItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-xl no-underline transition-all text-sm ${
+                      isActive
+                        ? 'bg-white text-[#1f1a17] font-medium shadow-sm'
+                        : 'text-neutral-500 hover:bg-white/50 hover:text-[#1f1a17]'
+                    }`}
+                  >
+                    <span className={`text-lg ${isActive ? '' : 'opacity-70'}`}>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Reflection section */}
+        <div className="mb-6">
+          <p className="px-4 mb-2 text-[10px] font-medium text-neutral-400 uppercase tracking-wider">
+            Reflection
+          </p>
+          <ul className="space-y-1">
+            {reflectionItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-xl no-underline transition-all text-sm ${
+                      isActive
+                        ? 'bg-white text-[#1f1a17] font-medium shadow-sm'
+                        : 'text-neutral-500 hover:bg-white/50 hover:text-[#1f1a17]'
+                    }`}
+                  >
+                    <span className={`text-lg ${isActive ? '' : 'opacity-70'}`}>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Settings */}
         <ul className="space-y-1">
-          {navItems.map((item) => {
+          {settingsItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <li key={item.href}>
@@ -90,14 +154,21 @@ export function SidebarContent() {
   );
 }
 
-// Mobile bottom nav
+// Mobile bottom nav - shows key items only
+const mobileNavItems = [
+  { href: '/feed', label: 'Signals', icon: '✦' },
+  { href: '/my-books', label: 'My Books', icon: '📚' },
+  { href: '/reflections', label: 'Stayed', icon: '💭' },
+  { href: '/top10', label: 'Top 10', icon: '🏆' },
+];
+
 export function MobileNav() {
   const pathname = usePathname();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-black/5 z-50 safe-area-inset-bottom">
       <ul className="flex justify-around items-center h-16">
-        {navItems.map((item) => {
+        {mobileNavItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <li key={item.href}>

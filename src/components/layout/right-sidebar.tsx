@@ -135,15 +135,10 @@ export function RightSidebar() {
     <div className="flex flex-col h-full">
       {/* Header - sticky */}
       <div className="sticky top-0 bg-[#fdfcfa] z-10 p-5 pb-3 border-b border-black/5">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm font-medium text-[#1f1a17]">
-              From people you follow
-            </h2>
-            {unseenCount > 0 && (
-              <span className="text-xs text-neutral-400">{unseenCount} new</span>
-            )}
-          </div>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-sm font-medium text-[#1f1a17]">
+            Incoming signals
+          </h2>
           <button
             onClick={() => setShowManageSources(true)}
             className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
@@ -151,6 +146,9 @@ export function RightSidebar() {
             Manage
           </button>
         </div>
+        <p className="text-xs text-neutral-400 mb-3">
+          New books from people you trust{unseenCount > 0 && <span className="ml-1">· {unseenCount} new</span>}
+        </p>
 
         {/* Filters */}
         <div className="flex gap-1">
@@ -209,18 +207,18 @@ export function RightSidebar() {
         ) : items.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-sm text-neutral-400">
-              {filter === 'new' ? 'No new items' : 'No items'}
+              {filter === 'new' ? 'No new signals' : 'No signals yet'}
             </p>
-            <p className="text-xs text-neutral-300 mt-2">
+            <p className="text-xs text-neutral-300 mt-2 max-w-[200px] mx-auto">
               {filter === 'new'
-                ? 'New books from people you follow will appear here'
-                : 'Add sources to start seeing items'}
+                ? 'Books appear here when someone you follow finishes or loves something'
+                : 'Add people or feeds to start seeing signals'}
             </p>
             <button
               onClick={() => setShowManageSources(true)}
               className="mt-4 text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
             >
-              Add a source
+              Add a person or feed
             </button>
           </div>
         ) : (
@@ -422,7 +420,7 @@ function ManageSourcesModal({ onClose }: { onClose: () => void }) {
           {/* Add new source */}
           <div className="mb-6">
             <h3 className="text-sm font-medium text-neutral-500 mb-3">
-              Add a source
+              Add a person or feed
             </h3>
             <div className="space-y-3">
               <input
