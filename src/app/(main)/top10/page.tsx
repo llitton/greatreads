@@ -212,14 +212,14 @@ export default function Top10Page() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-5 py-8">
       {/* Header - identity, not data entry */}
-      <header className="mb-12">
-        <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+      <header className="mb-8">
+        <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-5">
           Your canon
         </p>
 
-        <h1 className="text-3xl font-serif font-semibold text-[#1f1a17] mb-4">
+        <h1 className="text-3xl font-serif font-semibold text-[#1f1a17] mb-3">
           Mark&apos;s Top 10
         </h1>
 
@@ -233,7 +233,7 @@ export default function Top10Page() {
 
         {/* Actions - evolving CTA */}
         {!hasBooks ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Button onClick={() => setShowAddBook(true)} size="lg">
               Start your Top 10
             </Button>
@@ -242,7 +242,7 @@ export default function Top10Page() {
             </p>
           </div>
         ) : topTen && topTen.items.length < 10 ? (
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-5">
             <Button onClick={() => setShowAddBook(true)}>
               Continue shaping your Top 10
             </Button>
@@ -254,7 +254,7 @@ export default function Top10Page() {
             </button>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-5">
             <Button onClick={() => setShowAddBook(true)} variant="secondary">
               Revisit your canon
             </Button>
@@ -270,7 +270,7 @@ export default function Top10Page() {
 
       {/* Share link - only when has books */}
       {hasBooks && (
-        <div className="mb-10 p-5 bg-neutral-50 rounded-2xl">
+        <div className="mb-8 p-5 bg-neutral-50 rounded-2xl">
           <p className="text-sm font-medium text-[#1f1a17] mb-3">
             Share your list
           </p>
@@ -279,7 +279,7 @@ export default function Top10Page() {
               type="text"
               readOnly
               value={shareUrl}
-              className="flex-1 px-4 py-2.5 text-sm bg-white border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
+              className="flex-1 px-3 py-2 text-sm bg-white border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
             <Button
@@ -299,7 +299,7 @@ export default function Top10Page() {
       {hasBooks ? (
         <>
           {/* Progress indicator */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-5 flex items-center justify-between">
             <p className="text-sm text-neutral-500">
               {topTen!.items.length} of 10 · <span className="text-neutral-400 italic">Your canon is taking shape</span>
             </p>
@@ -309,34 +309,37 @@ export default function Top10Page() {
           </div>
           <Top10List items={topTen!.items} onReorder={handleReorder} onRemove={handleRemove} />
 
-          {/* Remaining prompts - as invitations, not vacancies */}
+          {/* Next invitation - one at a time, not all at once */}
           {topTen!.items.length < 10 && (
-            <div className="mt-8 space-y-3">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
-                Waiting for a thought
+            <div className="mt-8">
+              {/* Single next prompt */}
+              <button
+                onClick={() => setShowAddBook(true)}
+                className="w-full flex items-center gap-5 p-5 rounded-2xl bg-[#fdfcfa] border border-[#f0ebe3] hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left group"
+              >
+                <span className="w-10 h-10 flex items-center justify-center text-xl font-serif text-neutral-300 group-hover:text-neutral-400 flex-shrink-0 transition-colors">
+                  {topTen!.items.length + 1}
+                </span>
+                <div className="flex-1">
+                  <p className="text-[15px] text-neutral-500 group-hover:text-neutral-700 transition-colors mb-1">
+                    {slotPrompts[topTen!.items.length + 1] || 'A book that belongs here'}
+                  </p>
+                  <p className="text-xs text-neutral-300">
+                    {10 - topTen!.items.length - 1} more waiting after this
+                  </p>
+                </div>
+                <span className="text-neutral-300 group-hover:text-neutral-500 text-xl transition-colors">
+                  +
+                </span>
+              </button>
+
+              {/* Reassurance */}
+              <p className="text-center text-sm text-neutral-400 mt-5">
+                Most people add one or two at a time.
               </p>
-              {Array.from({ length: 10 - topTen!.items.length }, (_, i) => {
-                const rank = topTen!.items.length + i + 1;
-                return (
-                  <button
-                    key={rank}
-                    onClick={() => setShowAddBook(true)}
-                    className="w-full flex items-center gap-5 p-5 rounded-2xl bg-[#fdfcfa] border border-[#f0ebe3] hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left group"
-                  >
-                    <span className="w-8 h-8 flex items-center justify-center text-lg text-neutral-300 group-hover:text-neutral-400 flex-shrink-0 transition-colors">
-                      {rank}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-[15px] text-neutral-400 group-hover:text-neutral-600 transition-colors">
-                        {slotPrompts[rank] || 'A book that belongs here'}
-                      </p>
-                    </div>
-                    <span className="text-neutral-300 group-hover:text-neutral-500 transition-colors">
-                      +
-                    </span>
-                  </button>
-                );
-              })}
+              <p className="text-center text-xs text-neutral-300 italic mt-2">
+                This list is meant to change as you do.
+              </p>
             </div>
           )}
         </>
@@ -377,7 +380,7 @@ export default function Top10Page() {
             </div>
 
             {/* Prompts - as invitations to reflect */}
-            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide pt-4">
+            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide pt-5">
               Prompts to help you begin
             </p>
             {[4, 5, 6, 7].map((rank) => (
@@ -407,7 +410,7 @@ export default function Top10Page() {
           </div>
 
           {/* Encouragement - reframed as permission */}
-          <div className="text-center space-y-2 pt-4">
+          <div className="text-center space-y-2 pt-5">
             <p className="text-sm text-neutral-500">
               Most people add one or two at a time.
             </p>
@@ -420,13 +423,13 @@ export default function Top10Page() {
 
       {/* Sent requests */}
       {requests.length > 0 && (
-        <div className="mt-12 space-y-4">
+        <div className="mt-8 space-y-5">
           <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
             Requests sent
           </p>
           <div className="space-y-3">
             {requests.map((req) => (
-              <div key={req.id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl">
+              <div key={req.id} className="flex items-center justify-between p-5 bg-neutral-50 rounded-xl">
                 <div>
                   <p className="font-medium text-[#1f1a17]">{req.toEmail}</p>
                   <p className="text-sm text-neutral-400">
@@ -451,17 +454,19 @@ export default function Top10Page() {
       )}
 
       {/* Footer - emotional closure */}
-      <footer className="mt-24 pt-8 border-t border-black/5 text-center">
-        <p className="text-sm text-neutral-300 italic">
+      <footer className="mt-8 pt-8 border-t border-neutral-50 text-center">
+        <p className="text-sm text-neutral-300 italic leading-relaxed">
           These are the books you carry with you.
+          <br />
+          They don&apos;t need to be finished.
         </p>
       </footer>
 
       {/* Add book modal */}
       {showAddBook && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-[#1f1a17]">
                 Add to your Top 10
               </h2>
@@ -495,7 +500,7 @@ export default function Top10Page() {
                     <button
                       key={book.id}
                       onClick={() => handleAddBook(book.id)}
-                      className="w-full flex items-center gap-4 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
+                      className="w-full flex items-center gap-5 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
                     >
                       {book.coverUrl ? (
                         <img src={book.coverUrl} alt="" className="w-12 h-[72px] object-cover rounded-lg shadow-sm" />
@@ -522,9 +527,9 @@ export default function Top10Page() {
 
       {/* Request form modal */}
       {showRequestForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-5 w-full max-w-md">
+            <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-lg font-semibold text-[#1f1a17]">
                   Ask a friend
@@ -542,7 +547,7 @@ export default function Top10Page() {
                 </svg>
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <Input
                 label="Their email"
                 type="email"
@@ -564,7 +569,7 @@ export default function Top10Page() {
                 <textarea
                   value={requestMessage}
                   onChange={(e) => setRequestMessage(e.target.value)}
-                  className="w-full px-4 py-3 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
+                  className="w-full px-3 py-3 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 resize-none"
                   rows={3}
                   placeholder="I'd love to know your favorites..."
                 />

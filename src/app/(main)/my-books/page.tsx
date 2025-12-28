@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { SignalAttribution, createSignal } from '@/components/ui/signal-attribution';
 import Link from 'next/link';
 import { normalizeGoodreadsText } from '@/lib/text/normalize';
 
@@ -278,9 +279,19 @@ function BookCard({
     >
       {/* Signal indicator for suggestions with notes */}
       {!isOwned && hasNotes && (
-        <p className="text-xs text-amber-600/70 mb-3 flex items-center gap-1">
-          <span>★</span> Strong signal from {sourceName}
-        </p>
+        <div className="mb-3">
+          <SignalAttribution
+            signal={createSignal({
+              type: 'reflection',
+              sourcePersonId: item.id,
+              sourcePersonName: sourceName,
+              sourceKind: 'import',
+            })}
+            variant="inline"
+            showBadge={true}
+            className="text-amber-600/70"
+          />
+        </div>
       )}
 
       <div className="flex gap-4">
@@ -353,9 +364,16 @@ function BookCard({
                   Add to My Books
                 </button>
                 {!hasNotes && (
-                  <span className="text-xs text-neutral-300">
-                    From {sourceName}
-                  </span>
+                  <SignalAttribution
+                    signal={createSignal({
+                      type: 'import_five_star',
+                      sourcePersonId: item.id,
+                      sourcePersonName: sourceName,
+                      sourceKind: 'import',
+                    })}
+                    variant="muted"
+                    showBadge={false}
+                  />
                 )}
               </>
             )}

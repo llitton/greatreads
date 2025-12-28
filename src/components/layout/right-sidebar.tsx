@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { normalizeGoodreadsText } from '@/lib/text/normalize';
+import { FilterPillGroup } from '@/components/ui/status-pill';
+import { SignalAttribution, createSignal } from '@/components/ui/signal-attribution';
 
 type FilterType = 'new' | 'seen' | 'all';
 type SourceType = 'person' | 'feed';
@@ -29,13 +32,60 @@ interface InboxResponse {
   nextCursor: string | null;
 }
 
+interface Source {
+  id: string;
+  url: string;
+  title: string | null;
+  status: 'DRAFT' | 'VALIDATING' | 'ACTIVE' | 'PAUSED' | 'BACKOFF' | 'FAILED';
+  failureReasonCode: string | null;
+  lastSuccessAt: string | null;
+  lastAttemptAt: string | null;
+  nextAttemptAt: string | null;
+  consecutiveFailures: number;
+  lastError: string | null;
+  isActive: boolean;
+}
+
+// Contextual content for pages where signals aren't the focus
+// The right rail is always present, but adapts its message per page
+const CONTEXTUAL_PAGES: Record<string, { title: string; description: string; tip?: string }> = {
+  '/import': {
+    title: 'Signals start here',
+    description: "We'll look for five-star books and ignore everything else.",
+    tip: 'Your import history becomes visible to people who follow you.',
+  },
+  '/settings': {
+    title: 'Signals are shaped by trust',
+    description: 'Changes here affect what appears in your feed.',
+  },
+  '/under-the-hood': {
+    title: 'Signal weights explained',
+    description: 'These rules explain why some books surface and most do not.',
+  },
+  '/reflections': {
+    title: 'Books that stayed',
+    description: 'This page is for quiet reflection. Signals will wait.',
+  },
+  '/top10': {
+    title: 'Your personal canon',
+    description: 'Curating your Top 10 is a different kind of thinking.',
+  },
+  '/my-books': {
+    title: 'Your library',
+    description: 'Books you\'ve read, saved, or want to remember.',
+  },
+};
+
 export function RightSidebar() {
+  const pathname = usePathname();
   const [items, setItems] = useState<InboxItem[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
   const [unseenCount, setUnseenCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('new');
   const [showManageSources, setShowManageSources] = useState(false);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
   const fetchInbox = useCallback(async () => {
     try {
@@ -49,17 +99,31 @@ export function RightSidebar() {
       const data: InboxResponse = await res.json();
       setItems(data.items);
       setUnseenCount(data.unseenCount);
+      setLastChecked(new Date());
     } catch (err) {
       console.error('Failed to fetch inbox:', err);
-      setError('Failed to load items');
+      setError('Couldn\'t load signals');
     } finally {
       setLoading(false);
     }
   }, [filter]);
 
+  const fetchSources = useCallback(async () => {
+    try {
+      const res = await fetch('/api/rss/inbox/sources');
+      if (res.ok) {
+        const data = await res.json();
+        setSources(data.sources || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch sources:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchInbox();
-  }, [fetchInbox]);
+    fetchSources();
+  }, [fetchInbox, fetchSources]);
 
   const handleSave = async (itemId: string, sourceName: string | null) => {
     try {
@@ -128,103 +192,262 @@ export function RightSidebar() {
     return `${days}d ago`;
   };
 
+  const formatLastChecked = () => {
+    if (!lastChecked) return null;
+    const mins = Math.floor((Date.now() - lastChecked.getTime()) / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    return `${hours}h ago`;
+  };
+
+  const formatNextAttempt = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+
+  // Derive state
+  const hasSources = sources.length > 0;
+  const activeSources = sources.filter(s => s.status === 'ACTIVE' || s.status === 'VALIDATING');
+  const failedSources = sources.filter(s => s.status === 'FAILED');
+  const backoffSources = sources.filter(s => s.status === 'BACKOFF');
+
+  // Check if we're on a contextual page
+  const contextualContent = CONTEXTUAL_PAGES[pathname];
+
+  // Get status message for sources with issues
+  const getSourceStatusMessage = (source: Source) => {
+    switch (source.status) {
+      case 'VALIDATING':
+        return 'Checking this source...';
+      case 'BACKOFF':
+        const retryTime = formatNextAttempt(source.nextAttemptAt);
+        return retryTime
+          ? `Having trouble. Retrying at ${retryTime}.`
+          : 'Having trouble reaching this source.';
+      case 'FAILED':
+        switch (source.failureReasonCode) {
+          case 'NOT_FEED':
+            return "This doesn't look like an RSS feed.";
+          case 'UNAUTHORIZED':
+            return 'This feed requires authentication.';
+          case 'NOT_FOUND':
+            return "This feed couldn't be found.";
+          case 'PARSE_ERROR':
+            return "Couldn't read this feed.";
+          default:
+            return source.lastError || 'This source needs attention.';
+        }
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#faf9f7]">
-      {/* Header - sticky */}
-      <div className="sticky top-0 bg-[#faf9f7] z-10 p-4 pb-3 border-b border-black/5">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER: Always present - identity of this space
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="sticky top-0 bg-[#faf9f7] z-10 p-5 pb-3 border-b border-black/5">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-sm font-medium text-[#1f1a17]">
             Incoming signals
           </h2>
-          <button
-            onClick={() => setShowManageSources(true)}
-            className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
-          >
-            Manage
-          </button>
-        </div>
-        <p className="text-xs text-neutral-400 mb-3">
-          New books from people you trust
-          {unseenCount > 0 && <span className="ml-1 font-medium text-neutral-500">· {unseenCount} new</span>}
-        </p>
-
-        {/* Filters */}
-        <div className="flex gap-1">
-          {(['new', 'seen', 'all'] as const).map((f) => (
+          {hasSources && (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-                filter === f
-                  ? 'bg-[#1f1a17] text-white'
-                  : 'text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100'
-              }`}
+              onClick={() => setShowManageSources(true)}
+              className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
             >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
+              Manage
             </button>
-          ))}
+          )}
         </div>
+        <p className="text-xs text-neutral-400">
+          New books from people you trust
+          {unseenCount > 0 && (
+            <span className="ml-1 font-medium text-neutral-500">· {unseenCount} new</span>
+          )}
+        </p>
+        <p className="text-[10px] text-neutral-300 mt-1">Rare by design</p>
 
-        {/* Mark all seen */}
-        {unseenCount > 0 && filter === 'new' && (
-          <button
-            onClick={handleMarkAllSeen}
-            className="mt-2 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
-          >
-            Mark all seen
-          </button>
+        {/* Filters - only show when we have sources and items */}
+        {hasSources && !contextualContent && (
+          <>
+            <FilterPillGroup
+              filters={[
+                { value: 'new', label: 'New' },
+                { value: 'seen', label: 'Seen' },
+                { value: 'all', label: 'All' },
+              ]}
+              activeFilter={filter}
+              onFilterChange={(v) => setFilter(v as FilterType)}
+              className="mt-3"
+            />
+
+            {/* Mark all seen + last checked */}
+            <div className="flex items-center justify-between mt-2">
+              {unseenCount > 0 && filter === 'new' ? (
+                <button
+                  onClick={handleMarkAllSeen}
+                  className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                >
+                  Mark all seen
+                </button>
+              ) : (
+                <span />
+              )}
+              {lastChecked && !loading && (
+                <span className="text-[10px] text-neutral-300">
+                  Checked {formatLastChecked()}
+                </span>
+              )}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Content - scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 pt-3">
-        {loading ? (
+      {/* ═══════════════════════════════════════════════════════════════════
+          STATE CONTENT: Changes by context, but container never collapses
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 overflow-y-auto p-5 pt-3">
+        {contextualContent ? (
+          /* Contextual page state - explain relevance */
+          <div className="py-5">
+            <p className="text-sm font-medium text-neutral-500 mb-2">
+              {contextualContent.title}
+            </p>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              {contextualContent.description}
+            </p>
+          </div>
+        ) : loading ? (
+          /* Loading state - skeleton cards */
           <div className="space-y-3">
+            <p className="text-xs text-neutral-400 mb-2">Checking for new signals...</p>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="flex gap-2.5">
+              <div key={i} className="bg-white rounded-xl border border-black/5 p-3 animate-pulse">
+                <div className="flex gap-2 mb-2">
                   <div className="w-10 h-[60px] bg-neutral-100 rounded" />
                   <div className="flex-1 space-y-2">
                     <div className="h-3 bg-neutral-100 rounded w-3/4" />
                     <div className="h-2 bg-neutral-50 rounded w-1/2" />
+                    <div className="h-2 bg-neutral-50 rounded w-1/3" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="text-center py-6">
-            <p className="text-sm text-neutral-500 mb-3">{error}</p>
+          /* Error state */
+          <div className="text-center py-8">
+            <p className="text-sm text-neutral-500 mb-2">{error}</p>
+            <p className="text-xs text-neutral-400 mb-5">Check your connection and try again.</p>
             <button
               onClick={fetchInbox}
-              className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors px-3 py-2 bg-neutral-100 rounded-lg"
             >
               Retry
             </button>
           </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-neutral-400 mb-2">
-              {filter === 'new' ? 'No new signals yet' : 'No signals yet'}
+        ) : !hasSources ? (
+          /* STATE A: No sources yet (onboarding) */
+          <div className="py-5">
+            <p className="text-sm font-medium text-neutral-500 mb-2">
+              You haven&apos;t added any sources yet.
             </p>
-            <p className="text-xs text-neutral-300 leading-relaxed max-w-[180px] mx-auto">
-              Books appear when someone you trust finishes a five-star read.
+            <p className="text-xs text-neutral-400 leading-relaxed mb-5">
+              Signals appear when someone you trust finishes a five-star book.
             </p>
+
+            {/* Ghost cards - preview format */}
+            <div className="space-y-3 mb-5 opacity-40 pointer-events-none">
+              <div className="bg-white rounded-xl border border-black/5 p-3">
+                <div className="flex gap-2">
+                  <div className="w-10 h-[60px] bg-neutral-100 rounded" />
+                  <div className="flex-1">
+                    <p className="text-xs text-neutral-400 italic">&ldquo;A book that stayed with me&rdquo;</p>
+                    <p className="text-[10px] text-neutral-300 mt-1">From someone you trust</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-black/5 p-3">
+                <div className="flex gap-2">
+                  <div className="w-10 h-[60px] bg-neutral-100 rounded" />
+                  <div className="flex-1">
+                    <p className="text-xs text-neutral-400 italic">&ldquo;Five stars from Ken&rdquo;</p>
+                    <p className="text-[10px] text-neutral-300 mt-1">Added yesterday</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <button
               onClick={() => setShowManageSources(true)}
-              className="mt-4 text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+              className="w-full px-5 py-3 text-sm font-medium text-white bg-[#1f1a17] rounded-xl hover:bg-[#2f2a27] transition-colors"
             >
-              Add a source
+              Add a person or feed
+            </button>
+          </div>
+        ) : items.length === 0 ? (
+          /* STATE B: Has sources, nothing new (quiet) */
+          <div className="py-5">
+            <p className="text-sm font-medium text-neutral-500 mb-2">
+              Nothing new right now.
+            </p>
+            <p className="text-xs text-neutral-400 leading-relaxed mb-3">
+              We&apos;ll show books here when someone finishes a five-star read.
+            </p>
+
+            {/* Last checked status - builds trust */}
+            {lastChecked && (
+              <p className="text-[10px] text-neutral-300 mb-5">
+                Last checked {formatLastChecked()}
+              </p>
+            )}
+
+            {/* Show any sources with issues */}
+            {(failedSources.length > 0 || backoffSources.length > 0) && (
+              <div className="space-y-2 mb-5">
+                {failedSources.map((source) => (
+                  <div key={source.id} className="p-3 bg-red-50 rounded-xl border border-red-100">
+                    <p className="text-xs font-medium text-red-700 mb-1">
+                      {source.title || 'Source'}
+                    </p>
+                    <p className="text-[10px] text-red-600">
+                      {getSourceStatusMessage(source)}
+                    </p>
+                  </div>
+                ))}
+                {backoffSources.map((source) => (
+                  <div key={source.id} className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                    <p className="text-xs font-medium text-amber-700 mb-1">
+                      {source.title || 'Source'}
+                    </p>
+                    <p className="text-[10px] text-amber-600">
+                      {getSourceStatusMessage(source)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowManageSources(true)}
+              className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+            >
+              Add another source
             </button>
           </div>
         ) : (
+          /* STATE C: Active signals */
           <div className="space-y-3">
             {items.map((item) => (
               <div
                 key={item.actionId}
                 className="bg-white rounded-xl border border-black/5 p-3 shadow-sm"
               >
-                <div className="flex gap-2.5 mb-2">
+                <div className="flex gap-2 mb-2">
                   {/* Cover - smaller */}
                   {item.coverImageUrl ? (
                     <img
@@ -251,7 +474,16 @@ export function RightSidebar() {
                       </p>
                     )}
                     <p className="text-[11px] text-neutral-400 mt-1">
-                      From {item.source.title || 'Unknown'}
+                      <SignalAttribution
+                        signal={createSignal({
+                          type: 'rss_five_star',
+                          sourcePersonId: item.source.id,
+                          sourcePersonName: item.source.title || 'Unknown',
+                          sourceKind: 'rss',
+                        })}
+                        variant="rail"
+                        showBadge={false}
+                      />
                       {item.publishedAt && ` · ${formatDaysAgo(item.publishedAt)}`}
                     </p>
                   </div>
@@ -285,13 +517,57 @@ export function RightSidebar() {
         )}
       </div>
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          FOOTER: Always present - action or status
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="p-5 pt-3 border-t border-black/5">
+        {contextualContent ? (
+          /* Contextual pages: show relevant action */
+          <p className="text-xs text-neutral-300 text-center">
+            We notify you only for five-star reads
+          </p>
+        ) : !hasSources ? (
+          /* No sources: primary CTA */
+          <button
+            onClick={() => setShowManageSources(true)}
+            className="w-full text-xs text-neutral-400 hover:text-neutral-600 transition-colors py-2"
+          >
+            Add a source
+          </button>
+        ) : items.length > 0 ? (
+          /* Active: see all link */
+          <button
+            onClick={() => setShowManageSources(true)}
+            className="w-full text-xs text-neutral-400 hover:text-neutral-600 transition-colors py-2"
+          >
+            Manage sources
+          </button>
+        ) : (
+          /* Quiet: reassurance */
+          <p className="text-xs text-neutral-300 text-center">
+            We notify you only for five-star reads
+          </p>
+        )}
+      </div>
+
       {/* Manage Sources Modal */}
       {showManageSources && (
         <AddSourceModal
+          sources={sources}
           onClose={() => {
             setShowManageSources(false);
             fetchInbox();
+            fetchSources();
           }}
+          onRemove={async (id) => {
+            try {
+              await fetch(`/api/rss/inbox/sources/${id}`, { method: 'DELETE' });
+              setSources((prev) => prev.filter((s) => s.id !== id));
+            } catch (err) {
+              console.error('Failed to remove source:', err);
+            }
+          }}
+          getSourceStatusMessage={getSourceStatusMessage}
         />
       )}
     </div>
@@ -301,18 +577,19 @@ export function RightSidebar() {
 /**
  * Modal for adding sources with type selection and preview
  */
-function AddSourceModal({ onClose }: { onClose: () => void }) {
-  const [sources, setSources] = useState<
-    Array<{
-      id: string;
-      url: string;
-      title: string | null;
-      isActive: boolean;
-      lastFetchedAt: string | null;
-      lastError: string | null;
-    }>
-  >([]);
-  const [loading, setLoading] = useState(true);
+function AddSourceModal({
+  sources: initialSources,
+  onClose,
+  onRemove,
+  getSourceStatusMessage,
+}: {
+  sources: Source[];
+  onClose: () => void;
+  onRemove: (id: string) => Promise<void>;
+  getSourceStatusMessage: (source: Source) => string | null;
+}) {
+  const [sources, setSources] = useState<Source[]>(initialSources);
+  const [loading, setLoading] = useState(false);
 
   // Add source state
   const [sourceType, setSourceType] = useState<SourceType>('person');
@@ -320,6 +597,7 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
   const [displayName, setDisplayName] = useState('');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [urlConverted, setUrlConverted] = useState(false);
 
   // Preview state
   const [previewing, setPreviewing] = useState(false);
@@ -330,21 +608,41 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
     sampleItems: Array<{ title: string; author: string | null }>;
   } | null>(null);
 
-  useEffect(() => {
-    fetchSources();
-  }, []);
-
-  const fetchSources = async () => {
+  /**
+   * Convert a Goodreads page URL to RSS URL
+   * /review/list/66205797 → /review/list_rss/66205797?shelf=read
+   */
+  const convertGoodreadsUrl = (inputUrl: string): { url: string; converted: boolean } => {
     try {
-      const res = await fetch('/api/rss/inbox/sources');
-      if (res.ok) {
-        const data = await res.json();
-        setSources(data.sources || []);
+      // Match patterns like goodreads.com/review/list/12345 (not list_rss)
+      const pagePattern = /goodreads\.com\/review\/list\/(\d+)/i;
+      const match = inputUrl.match(pagePattern);
+
+      if (match) {
+        const userId = match[1];
+        // Build the RSS URL
+        const rssUrl = `https://www.goodreads.com/review/list_rss/${userId}?shelf=read`;
+        return { url: rssUrl, converted: true };
       }
-    } catch (err) {
-      console.error('Failed to fetch sources:', err);
-    } finally {
-      setLoading(false);
+
+      // Already an RSS URL or different format
+      return { url: inputUrl, converted: false };
+    } catch {
+      return { url: inputUrl, converted: false };
+    }
+  };
+
+  const handleUrlChange = (inputUrl: string) => {
+    setPreviewData(null);
+    setAddError(null);
+
+    if (sourceType === 'person') {
+      const { url: convertedUrl, converted } = convertGoodreadsUrl(inputUrl);
+      setUrl(convertedUrl);
+      setUrlConverted(converted);
+    } else {
+      setUrl(inputUrl);
+      setUrlConverted(false);
     }
   };
 
@@ -374,7 +672,7 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
         qualifyingCount: data.fiveStarItems || 0,
         sampleItems: data.sampleItems || [],
       });
-    } catch (err) {
+    } catch {
       setAddError('Failed to connect to feed');
     } finally {
       setPreviewing(false);
@@ -397,15 +695,16 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
       });
 
       if (res.ok) {
+        const data = await res.json();
+        setSources((prev) => [data.source, ...prev]);
         setUrl('');
         setDisplayName('');
         setPreviewData(null);
-        fetchSources();
       } else {
         const data = await res.json();
         setAddError(data.error || 'Failed to add source');
       }
-    } catch (err) {
+    } catch {
       setAddError('Failed to add source');
     } finally {
       setAdding(false);
@@ -413,12 +712,8 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleRemove = async (id: string) => {
-    try {
-      await fetch(`/api/rss/inbox/sources/${id}`, { method: 'DELETE' });
-      setSources((prev) => prev.filter((s) => s.id !== id));
-    } catch (err) {
-      console.error('Failed to remove source:', err);
-    }
+    await onRemove(id);
+    setSources((prev) => prev.filter((s) => s.id !== id));
   };
 
   const resetForm = () => {
@@ -426,10 +721,11 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
     setDisplayName('');
     setPreviewData(null);
     setAddError(null);
+    setUrlConverted(false);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-hidden">
         {/* Header */}
         <div className="p-5 border-b border-black/5">
@@ -454,8 +750,11 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="p-5 overflow-y-auto max-h-[65vh]">
-          {/* Source Type Selection */}
-          <div className="mb-6">
+          {/* Step 1: Source Type Selection */}
+          <div className="mb-5">
+            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide mb-2">
+              Step 1: Choose source type
+            </p>
             <div className="space-y-2">
               <label
                 className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
@@ -465,7 +764,7 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
                 }`}
                 onClick={() => { setSourceType('person'); resetForm(); }}
               >
-                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
+                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
                   sourceType === 'person' ? 'border-[#1f1a17]' : 'border-neutral-300'
                 }`}>
                   {sourceType === 'person' && <div className="w-2 h-2 rounded-full bg-[#1f1a17]" />}
@@ -484,7 +783,7 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
                 }`}
                 onClick={() => { setSourceType('feed'); resetForm(); }}
               >
-                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
+                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
                   sourceType === 'feed' ? 'border-[#1f1a17]' : 'border-neutral-300'
                 }`}>
                   {sourceType === 'feed' && <div className="w-2 h-2 rounded-full bg-[#1f1a17]" />}
@@ -497,43 +796,82 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Input Fields */}
-          <div className="mb-6 space-y-3">
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => { setUrl(e.target.value); setPreviewData(null); setAddError(null); }}
-              placeholder={sourceType === 'person' ? 'Goodreads RSS URL' : 'RSS feed URL'}
-              className="w-full px-4 py-2.5 text-sm bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
-            />
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={sourceType === 'person' ? 'Person\'s name (e.g., Laura)' : 'Display name (e.g., Austin Kleon\'s blog)'}
-              className="w-full px-4 py-2.5 text-sm bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
-            />
+          {/* Step 2: Add Details */}
+          <div className="mb-5">
+            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide mb-2">
+              Step 2: Add details
+            </p>
+            <div className="space-y-3">
+              <div>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  placeholder={sourceType === 'person' ? 'Goodreads URL or RSS feed' : 'RSS feed URL'}
+                  className="w-full px-3 py-2.5 text-sm bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
+                />
+                {/* Show conversion message when URL was auto-converted */}
+                {urlConverted && (
+                  <p className="mt-2 text-xs text-green-600">
+                    ✓ Converted to RSS feed URL
+                  </p>
+                )}
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder={sourceType === 'person' ? "Person's name (required)" : 'Display name (e.g., Austin Kleon)'}
+                  className="w-full px-3 py-2.5 text-sm bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
+                />
+                {/* Live preview of how signals will appear */}
+                {sourceType === 'person' && displayName && (
+                  <p className="mt-2 text-xs text-neutral-500 italic">
+                    Will appear as:{' '}
+                    <SignalAttribution
+                      signal={createSignal({
+                        type: 'rss_five_star',
+                        sourcePersonId: 'preview',
+                        sourcePersonName: displayName,
+                        sourceKind: 'person',
+                      })}
+                      variant="inline"
+                      showStars={true}
+                      className="text-neutral-700"
+                    />
+                  </p>
+                )}
+                {sourceType === 'person' && !displayName && url && (
+                  <p className="mt-2 text-xs text-amber-600">
+                    Add a name so signals read naturally
+                  </p>
+                )}
+              </div>
 
-            {/* Preview Button */}
-            {!previewData && (
-              <button
-                onClick={handlePreview}
-                disabled={!url || previewing}
-                className="w-full px-4 py-2.5 text-sm font-medium text-[#1f1a17] bg-neutral-100 rounded-xl hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {previewing ? 'Checking...' : 'Preview source'}
-              </button>
-            )}
+              {/* Preview Button */}
+              {!previewData && (
+                <button
+                  onClick={handlePreview}
+                  disabled={!url || previewing || (sourceType === 'person' && !displayName)}
+                  className="w-full px-3 py-2.5 text-sm font-medium text-[#1f1a17] bg-neutral-100 rounded-xl hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {previewing ? 'Checking...' : 'Preview source'}
+                </button>
+              )}
 
-            {/* Error */}
-            {addError && (
-              <p className="text-xs text-red-500 text-center">{addError}</p>
-            )}
+              {/* Error */}
+              {addError && (
+                <div className="p-3 bg-red-50 rounded-xl border border-red-100">
+                  <p className="text-xs text-red-600">{addError}</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Preview Results */}
           {previewData && (
-            <div className="mb-6 p-4 bg-neutral-50 rounded-xl border border-black/5">
+            <div className="mb-5 p-5 bg-neutral-50 rounded-xl border border-black/5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-medium text-[#1f1a17]">
                   {displayName || previewData.title}
@@ -549,11 +887,11 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-neutral-500 mb-3">
                 {previewData.qualifyingCount > 0 ? (
                   <span className="text-green-600">
-                    {previewData.qualifyingCount} five-star book{previewData.qualifyingCount !== 1 ? 's' : ''} found
+                    {previewData.qualifyingCount} five-star book{previewData.qualifyingCount !== 1 ? 's' : ''} ready to import
                   </span>
                 ) : (
-                  <span className="text-amber-600">
-                    No five-star books yet. We&apos;ll notify you when there are.
+                  <span className="text-neutral-500">
+                    Connected. When a book truly lands, you&apos;ll know.
                   </span>
                 )}
               </p>
@@ -573,7 +911,7 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={handleAdd}
                 disabled={adding}
-                className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-white bg-[#1f1a17] rounded-xl hover:bg-[#2f2a27] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full mt-5 px-3 py-2 text-sm font-medium text-white bg-[#1f1a17] rounded-xl hover:bg-[#2f2a27] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {adding ? 'Adding...' : `Add ${displayName || previewData.title}`}
               </button>
@@ -587,38 +925,55 @@ function AddSourceModal({ onClose }: { onClose: () => void }) {
                 Your sources
               </h3>
               <div className="space-y-2">
-                {sources.map((source) => (
-                  <div
-                    key={source.id}
-                    className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm text-[#1f1a17] truncate">
-                        {source.title || 'Untitled'}
-                      </p>
-                      {source.lastError && (
-                        <p className="text-xs text-red-500 mt-0.5 truncate">
-                          {source.lastError}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleRemove(source.id)}
-                      className="ml-3 p-1.5 text-neutral-400 hover:text-red-500 transition-colors"
+                {sources.map((source) => {
+                  const statusMessage = getSourceStatusMessage(source);
+                  const hasIssue = source.status === 'FAILED' || source.status === 'BACKOFF';
+
+                  return (
+                    <div
+                      key={source.id}
+                      className={`flex items-center justify-between p-3 rounded-xl ${
+                        hasIssue
+                          ? source.status === 'FAILED'
+                            ? 'bg-red-50 border border-red-100'
+                            : 'bg-amber-50 border border-amber-100'
+                          : 'bg-neutral-50'
+                      }`}
                     >
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                      <div className="min-w-0 flex-1">
+                        <p className={`font-medium text-sm truncate ${
+                          hasIssue
+                            ? source.status === 'FAILED' ? 'text-red-700' : 'text-amber-700'
+                            : 'text-[#1f1a17]'
+                        }`}>
+                          {source.title || 'Untitled'}
+                        </p>
+                        {statusMessage && (
+                          <p className={`text-[10px] mt-0.5 truncate ${
+                            source.status === 'FAILED' ? 'text-red-600' : 'text-amber-600'
+                          }`}>
+                            {statusMessage}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemove(source.id)}
+                        className="ml-3 p-2 text-neutral-400 hover:text-red-500 transition-colors"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {/* Help text for Goodreads */}
           {sourceType === 'person' && !previewData && (
-            <div className="mt-6 p-3 bg-neutral-50 rounded-xl">
+            <div className="mt-5 p-3 bg-neutral-50 rounded-xl">
               <p className="text-xs text-neutral-500 leading-relaxed">
                 <strong className="text-neutral-600">How to get a Goodreads RSS URL:</strong>
                 <br />

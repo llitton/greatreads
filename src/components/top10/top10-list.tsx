@@ -33,9 +33,10 @@ interface TopTenBook {
 interface SortableItemProps {
   item: TopTenBook;
   onRemove: (bookId: string) => void;
+  isTopTier: boolean;
 }
 
-function SortableItem({ item, onRemove }: SortableItemProps) {
+function SortableItem({ item, onRemove, isTopTier }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.book.id,
   });
@@ -50,33 +51,41 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-5 p-5 bg-white rounded-2xl border border-black/5 group transition-all duration-150 ${
+      className={`flex items-center gap-5 bg-white rounded-2xl border border-black/5 group transition-all duration-150 ${
         isDragging
           ? 'shadow-xl scale-[1.02] border-neutral-200'
           : 'shadow-sm hover:shadow-md'
-      }`}
+      } ${isTopTier ? 'p-5' : 'p-5'}`}
     >
-      {/* Rank - ceremonial, serif */}
-      <span className="w-10 h-10 flex items-center justify-center text-2xl font-serif text-neutral-300 flex-shrink-0">
+      {/* Rank - ceremonial, serif, larger for top 3 */}
+      <span className={`flex items-center justify-center font-serif text-neutral-300 flex-shrink-0 ${
+        isTopTier ? 'w-12 h-12 text-3xl' : 'w-10 h-10 text-2xl'
+      }`}>
         {item.rank}
       </span>
 
-      {/* Book cover - larger */}
+      {/* Book cover - larger for top 3 */}
       {item.book.coverUrl ? (
         <img
           src={item.book.coverUrl}
           alt=""
-          className="w-14 h-20 object-cover rounded-lg shadow-md flex-shrink-0"
+          className={`object-cover rounded-lg shadow-md flex-shrink-0 ${
+            isTopTier ? 'w-16 h-24' : 'w-14 h-20'
+          }`}
         />
       ) : (
-        <div className="w-14 h-20 bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-          <span className="text-2xl">📕</span>
+        <div className={`bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ${
+          isTopTier ? 'w-16 h-24' : 'w-14 h-20'
+        }`}>
+          <span className={isTopTier ? 'text-3xl' : 'text-2xl'}>📕</span>
         </div>
       )}
 
       {/* Book info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-[#1f1a17] mb-1">{item.book.title}</p>
+        <p className={`font-semibold text-[#1f1a17] mb-1 ${isTopTier ? 'text-lg' : ''}`}>
+          {item.book.title}
+        </p>
         {item.book.author && (
           <p className="text-sm text-neutral-500">{item.book.author}</p>
         )}
@@ -113,20 +122,6 @@ interface Top10ListProps {
   onReorder: (items: Array<{ bookId: string; rank: number }>) => Promise<void>;
   onRemove: (bookId: string) => Promise<void>;
 }
-
-// Prompts for empty slots
-const slotPrompts: Record<number, string> = {
-  1: 'Your most important book',
-  2: 'A book you reread',
-  3: 'A book you argue with',
-  4: 'A book that surprised you',
-  5: 'A book you give to people',
-  6: 'A book that changed your mind',
-  7: 'A book from your childhood',
-  8: 'A book you wish you wrote',
-  9: 'A book you think about often',
-  10: 'A book you discovered late',
-};
 
 export function Top10List({ items, onReorder, onRemove }: Top10ListProps) {
   const [localItems, setLocalItems] = useState(items);
@@ -169,50 +164,42 @@ export function Top10List({ items, onReorder, onRemove }: Top10ListProps) {
     await onRemove(bookId);
   };
 
-  // Calculate empty slots to show
-  const emptySlots = Array.from({ length: 10 - localItems.length }, (_, i) => localItems.length + i + 1);
+  // Split into top 3 and rest for visual hierarchy
+  const topTier = localItems.filter(item => item.rank <= 3);
+  const restTier = localItems.filter(item => item.rank > 3);
 
   return (
     <div className="space-y-8">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={localItems.map((i) => i.book.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-4">
-            {localItems.map((item) => (
-              <SortableItem key={item.book.id} item={item} onRemove={handleRemove} />
-            ))}
+          {/* Top 3 - the books that shaped me earliest */}
+          {topTier.length > 0 && (
+            <div className="space-y-5">
+              {topTier.map((item) => (
+                <SortableItem key={item.book.id} item={item} onRemove={handleRemove} isTopTier={true} />
+              ))}
+            </div>
+          )}
 
-            {/* Empty slots - inviting prompts */}
-            {emptySlots.map((rank) => (
-              <div
-                key={rank}
-                className="flex items-center gap-5 p-5 rounded-2xl bg-neutral-50/30 border border-dashed border-neutral-200/60"
-              >
-                {/* Rank - ceremonial */}
-                <span className="w-10 h-10 flex items-center justify-center text-2xl font-serif text-neutral-200 flex-shrink-0">
-                  {rank}
-                </span>
-                {/* Placeholder cover */}
-                <div className="w-14 h-20 bg-neutral-100/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-neutral-200 text-lg">+</span>
-                </div>
-                {/* Prompt */}
-                <div className="flex-1">
-                  <p className="text-neutral-300 text-sm italic">
-                    {slotPrompts[rank] || '—'}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Divider between top 3 and rest */}
+          {topTier.length >= 3 && restTier.length > 0 && (
+            <div className="flex items-center gap-5 py-2">
+              <div className="flex-1 h-px bg-neutral-100" />
+              <span className="text-[10px] text-neutral-300 uppercase tracking-widest">The rest of the canon</span>
+              <div className="flex-1 h-px bg-neutral-100" />
+            </div>
+          )}
+
+          {/* Rest - 4-10 */}
+          {restTier.length > 0 && (
+            <div className="space-y-4">
+              {restTier.map((item) => (
+                <SortableItem key={item.book.id} item={item} onRemove={handleRemove} isTopTier={false} />
+              ))}
+            </div>
+          )}
         </SortableContext>
       </DndContext>
-
-      {/* Helper text - reordering hint */}
-      {localItems.length > 0 && (
-        <p className="text-center text-sm text-neutral-400 italic">
-          Drag to reorder if one book rises above the rest over time.
-        </p>
-      )}
     </div>
   );
 }

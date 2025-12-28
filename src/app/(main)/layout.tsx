@@ -13,5 +13,6 @@ export default async function MainAppLayout({
     redirect('/login');
   }
 
+  // Right sidebar always present - it shows contextual content per page
   return <MainLayout>{children}</MainLayout>;
 }

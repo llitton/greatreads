@@ -4,16 +4,21 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { BookCoverWithFallback } from '@/components/ui/book-cover';
+import { BookStatusBadge } from '@/components/ui/status-pill';
+import { SignalPill, createSignal } from '@/components/ui/signal-attribution';
 import { normalizeGoodreadsText } from '@/lib/text/normalize';
+import type { SignalType } from '@/lib/signals/types';
 
 interface FeedCardProps {
   event: {
     id: string;
     friendName: string;
+    friendId?: string; // Source person ID for signal attribution
     eventDate: string | null;
     reviewText: string | null;
     eventUrl: string | null;
     rating?: number; // 4 or 5, depending on why it's shown
+    signalType?: SignalType; // Type of signal (five_star, top_10, etc.)
     book: {
       id: string;
       title: string;
@@ -23,12 +28,22 @@ interface FeedCardProps {
     };
     userStatus: 'WANT_TO_READ' | 'READING' | 'READ' | null;
   };
+  viewerId?: string; // Current viewer's ID for "You" substitution
   onUpdateStatus: (bookId: string, status: 'WANT_TO_READ' | 'READ') => Promise<void>;
 }
 
-export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
+export function FeedCard({ event, viewerId, onUpdateStatus }: FeedCardProps) {
   const [loading, setLoading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(event.userStatus);
+
+  // Create signal for attribution
+  const signal = createSignal({
+    type: event.signalType || 'five_star',
+    sourcePersonId: event.friendId || event.id, // Use friendId if available, fallback to event id
+    sourcePersonName: event.friendName,
+    sourceKind: 'rss',
+    rating: event.rating || 5,
+  });
 
   const handleStatusUpdate = async (status: 'WANT_TO_READ' | 'READ') => {
     setLoading(true);
@@ -42,7 +57,6 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
 
   // Determine the rating to display (default to 5)
   const rating = event.rating || 5;
-  const lovedVerb = rating === 5 ? 'loved' : 'highly rated';
 
   return (
     <article className="bg-white rounded-2xl border border-black/5 shadow-sm hover:shadow-md transition-shadow animate-fadeIn overflow-hidden">
@@ -85,12 +99,9 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
                 </div>
               </div>
 
-              {/* Why you're seeing this */}
+              {/* Signal attribution - source person, not viewer */}
               <div className="flex items-center gap-2 mt-3 mb-3">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
-                  <span className="text-amber-500">★</span>
-                  {event.friendName} {lovedVerb} this
-                </span>
+                <SignalPill signal={signal} viewerId={viewerId} />
                 {event.eventDate && (
                   <span className="text-xs text-neutral-400">
                     {formatDistanceToNow(new Date(event.eventDate), { addSuffix: true })}
@@ -108,19 +119,7 @@ export function FeedCard({ event, onUpdateStatus }: FeedCardProps) {
               {/* Status badge */}
               {currentStatus && (
                 <div className="mb-4">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                      currentStatus === 'READ'
-                        ? 'bg-[#4a7c59]/10 text-[#4a7c59]'
-                        : 'bg-[#d4a855]/20 text-[#5b4a3f]'
-                    }`}
-                  >
-                    {currentStatus === 'READ'
-                      ? '✓ Read'
-                      : currentStatus === 'READING'
-                        ? '📖 Reading'
-                        : '📌 Want to Read'}
-                  </span>
+                  <BookStatusBadge status={currentStatus} />
                 </div>
               )}
 

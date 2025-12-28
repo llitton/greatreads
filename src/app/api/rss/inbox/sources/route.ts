@@ -30,8 +30,12 @@ export async function GET() {
         title: true,
         description: true,
         siteUrl: true,
-        isActive: true,
-        lastFetchedAt: true,
+        status: true,
+        failureReasonCode: true,
+        lastSuccessAt: true,
+        lastAttemptAt: true,
+        nextAttemptAt: true,
+        consecutiveFailures: true,
         lastError: true,
         createdAt: true,
         _count: {
@@ -46,6 +50,8 @@ export async function GET() {
       sources: sources.map((s) => ({
         ...s,
         itemCount: s._count.items,
+        // Derive isActive from status for backward compatibility
+        isActive: s.status === 'ACTIVE' || s.status === 'VALIDATING',
         _count: undefined,
       })),
     });
@@ -90,14 +96,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Fetch and validate RSS feed, extract title/description
-    // For now, create with provided data
+    // Create source in ACTIVE state (validation was done via /api/rss/test preview)
+    // If we want stricter validation, we could start in VALIDATING and trigger cron
     const source = await prisma.rssSource.create({
       data: {
         userId: session.user.id,
         url,
         title: titleOverride || 'New Feed',
-        isActive: true,
+        status: 'ACTIVE',
+        isActive: true, // Keep for backward compatibility
       },
     });
 

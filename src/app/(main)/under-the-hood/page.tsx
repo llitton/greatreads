@@ -1,96 +1,94 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 
 export default function UnderTheHoodPage() {
-  const [showDetails, setShowDetails] = useState<string | null>(null);
-
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="max-w-xl mx-auto px-5 py-8">
       {/* ═══════════════════════════════════════════════════════════════════
-          ANCHOR - One sentence that captures everything
+          HEADER: The Principle + Orienting subtitle
       ═══════════════════════════════════════════════════════════════════ */}
-      <header className="mb-16">
-        <h1 className="text-2xl font-semibold text-[#1f1a17] mb-6">
-          How GreatReads Works
-        </h1>
-
-        {/* The anchor */}
-        <p className="text-lg text-[#1f1a17] leading-relaxed mb-3">
+      <header className="mb-8 text-center">
+        <h1 className="text-xl text-[#1f1a17] leading-relaxed mb-2">
           GreatReads keeps only the strongest signals of taste.
-          <br />
-          Everything else is intentionally ignored.
+        </h1>
+        <p className="text-sm text-neutral-400">
+          This page explains why some books surface here and most never will.
         </p>
-
-        {/* Expandable details */}
-        <details className="group">
-          <summary className="text-sm text-neutral-400 cursor-pointer hover:text-neutral-600 transition-colors list-none flex items-center gap-1.5">
-            <span className="text-xs group-open:rotate-90 transition-transform">›</span>
-            What does that mean?
-          </summary>
-          <div className="mt-4 pl-4 border-l-2 border-neutral-100 space-y-3 text-sm text-neutral-500 leading-relaxed">
-            <p>Most reading apps optimize for engagement — more books, more activity, more time spent.</p>
-            <p>GreatReads optimizes for trust. It shows you only what someone you chose to follow cared enough to signal as meaningful.</p>
-            <p>The result: fewer books, but ones worth paying attention to.</p>
-          </div>
-        </details>
       </header>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          SIGNAL TIERS - Visual hierarchy by weight
+          SIGNAL HIERARCHY: Visual gradient from strongest to weakest
+          Uses a left-side "strength rail" to show the system
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-2">
-          What counts as a strong signal
-        </h2>
-        <p className="text-sm text-neutral-400 mb-8">
-          From strongest to weakest — effort correlates with meaning.
+      <section className="mb-8">
+        <p className="text-[10px] text-neutral-300 uppercase tracking-widest mb-5">
+          Signal strength
         </p>
 
-        {/* Top tier */}
-        <div className="mb-8">
-          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
-            Highest weight
-          </p>
-          <div className="space-y-4">
-            <div className="flex gap-4 p-4 bg-[#faf8f5] rounded-xl border border-[#f0ebe3]">
-              <span className="text-xl flex-shrink-0 w-8">◆</span>
-              <div>
-                <p className="text-[15px] text-[#1f1a17] font-medium">Top 10 lists</p>
-                <p className="text-sm text-neutral-500">Someone chose this over every other book they&apos;ve read.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 p-4 bg-[#faf8f5] rounded-xl border border-[#f0ebe3]">
-              <span className="text-xl flex-shrink-0 w-8">✎</span>
-              <div>
-                <p className="text-[15px] text-[#1f1a17] font-medium">Written reflections</p>
-                <p className="text-sm text-neutral-500">They didn&apos;t just finish it. They thought about it later.</p>
-              </div>
-            </div>
+        {/* Container with strength rail on the left */}
+        <div className="relative pl-5">
+          {/* The strength rail - gradient line that thins as it descends */}
+          <div className="absolute left-0 top-0 bottom-0 w-1">
+            <div className="absolute top-0 w-1 h-1/4 bg-[#1f1a17] rounded-full" />
+            <div className="absolute top-1/4 w-0.5 h-1/4 bg-[#4a453f] rounded-full left-0.5" style={{ left: '1px' }} />
+            <div className="absolute top-2/4 w-0.5 h-1/4 bg-neutral-300 rounded-full" style={{ left: '1px' }} />
+            <div className="absolute top-3/4 w-px h-1/4 bg-neutral-200 rounded-full" style={{ left: '2px' }} />
           </div>
-        </div>
 
-        {/* Strong signals */}
-        <div>
-          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
-            Strong signals
-          </p>
           <div className="space-y-3">
-            <div className="flex gap-4 p-3 rounded-xl">
-              <span className="text-lg flex-shrink-0 w-8 text-neutral-400">♥</span>
-              <div>
-                <p className="text-[15px] text-[#1f1a17] font-medium">Favorites</p>
-                <p className="text-sm text-neutral-500">Books that stayed important even after the moment passed.</p>
+            {/* Highest weight - largest, boldest */}
+            <div className="bg-[#faf8f5] rounded-xl p-5 border-l-4 border-[#1f1a17]">
+              <div className="flex items-start gap-4">
+                <span className="text-xl">◆</span>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-base font-semibold text-[#1f1a17]">Top 10 lists</p>
+                    <span className="text-[10px] text-neutral-400 uppercase tracking-wide">Highest weight</span>
+                  </div>
+                  <p className="text-sm text-neutral-500">
+                    Someone chose this over every other book they&apos;ve read.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-4 p-3 rounded-xl">
-              <span className="text-lg flex-shrink-0 w-8 text-amber-500">★</span>
-              <div>
-                <p className="text-[15px] text-[#1f1a17] font-medium">5-star ratings</p>
-                <p className="text-sm text-neutral-500">Their highest possible endorsement.</p>
+            {/* Strong - slightly smaller */}
+            <div className="bg-[#faf8f5] rounded-xl p-4 border-l-2 border-[#4a453f]">
+              <div className="flex items-start gap-4">
+                <span className="text-lg text-neutral-600">✎</span>
+                <div>
+                  <p className="text-[15px] font-medium text-[#1f1a17] mb-0.5">Written reflections</p>
+                  <p className="text-sm text-neutral-500">
+                    They didn&apos;t just finish it. They thought about it later.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Medium - lighter treatment */}
+            <div className="bg-neutral-50/50 rounded-lg p-4 border-l border-neutral-300">
+              <div className="flex items-start gap-4">
+                <span className="text-lg text-rose-300">♥</span>
+                <div>
+                  <p className="text-sm font-medium text-neutral-700">Favorites</p>
+                  <p className="text-sm text-neutral-400">
+                    Books that stayed important after the moment passed.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Lower weight - most compact */}
+            <div className="bg-neutral-50/30 rounded-lg p-3 pl-4">
+              <div className="flex items-center gap-3">
+                <span className="text-base text-amber-300">★</span>
+                <div>
+                  <p className="text-sm text-neutral-600">
+                    <span className="font-medium">5-star ratings</span>
+                    <span className="text-neutral-400 ml-2">Their highest possible endorsement.</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -98,143 +96,76 @@ export default function UnderTheHoodPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          WHAT WE IGNORE - Axioms
+          THE CORE BELIEF: Optimized for trust
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-2">
-          What GreatReads ignores
-        </h2>
-        <p className="text-sm text-neutral-400 mb-8">
-          These are intentional omissions, not missing features.
+      <section className="mb-8 py-5 text-center">
+        <p className="text-neutral-500 mb-1">
+          GreatReads is not optimized for engagement.
         </p>
+        <p className="text-lg font-medium text-[#1f1a17]">
+          It&apos;s optimized for trust.
+        </p>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          THE REFUSAL: Manifesto, not footnote
+          Elevated with its own container, sharper language
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="mb-8 bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
+        <h2 className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest mb-5">
+          What we refuse to optimize for
+        </h2>
 
         <div className="space-y-4">
-          {[
-            { title: 'Popularity', why: 'Popularity measures agreement. Resonance measures impact.' },
-            { title: 'Algorithms based on strangers', why: 'Recommendations only come from people you choose to trust.' },
-            { title: 'Average ratings', why: 'Averages flatten taste. Individual taste is the point.' },
-            { title: 'Reading speed, streaks, or goals', why: 'This app treats reading as experience, not productivity.' },
-          ].map((item) => (
-            <div key={item.title} className="flex gap-4">
-              <span className="text-neutral-300 flex-shrink-0 w-6">✗</span>
-              <div>
-                <p className="text-[15px] text-[#1f1a17] font-medium">{item.title}</p>
-                <p className="text-sm text-neutral-500">{item.why}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+          <div className="flex items-baseline gap-3">
+            <span className="text-red-400 font-medium">✗</span>
+            <p className="text-[15px] text-[#1f1a17]">
+              <span className="font-medium">Popularity</span>
+              <span className="text-neutral-400 ml-1">— Agreement isn&apos;t impact.</span>
+            </p>
+          </div>
 
-        {/* Optimized for trust callout */}
-        <div className="mt-10 bg-[#1f1a17] text-white rounded-xl p-6">
-          <p className="text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
-            Not optimized for
-          </p>
-          <p className="text-[15px] leading-relaxed text-white/80">
-            Engagement · Daily usage · Completion · Growth loops
-          </p>
-          <p className="text-[15px] mt-3 text-white">
-            Optimized for <span className="font-semibold">trust</span>.
-          </p>
+          <div className="flex items-baseline gap-3">
+            <span className="text-red-400 font-medium">✗</span>
+            <p className="text-[15px] text-[#1f1a17]">
+              <span className="font-medium">Algorithms based on strangers</span>
+              <span className="text-neutral-400 ml-1">— Trust isn&apos;t crowdsourced.</span>
+            </p>
+          </div>
+
+          <div className="flex items-baseline gap-3">
+            <span className="text-red-400 font-medium">✗</span>
+            <p className="text-[15px] text-[#1f1a17]">
+              <span className="font-medium">Average ratings</span>
+              <span className="text-neutral-400 ml-1">— Averages flatten taste.</span>
+            </p>
+          </div>
+
+          <div className="flex items-baseline gap-3">
+            <span className="text-red-400 font-medium">✗</span>
+            <p className="text-[15px] text-[#1f1a17]">
+              <span className="font-medium">Reading speed, streaks, or goals</span>
+              <span className="text-neutral-400 ml-1">— Reading is experience, not productivity.</span>
+            </p>
+          </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          IMPORT - Framed as permissioned memory
+          CLOSING: Strong return path
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-2">
-          How books get here
-        </h2>
-        <p className="text-sm text-neutral-400 mb-6">
-          Import is the engine — but only with your permission.
+      <footer className="pt-8 border-t border-neutral-100 text-center">
+        <p className="text-sm text-neutral-500 mb-5">
+          If a book appears here, it earned its place.
         </p>
 
-        <div className="bg-[#faf8f5] rounded-2xl p-6 border border-[#f0ebe3] mb-6">
-          <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-            Importing tells GreatReads what mattered to you — nothing more.
-          </p>
-          <ul className="space-y-2 text-sm text-neutral-500">
-            <li className="flex gap-2">
-              <span className="text-neutral-400">→</span>
-              No averages. No popularity. No recency bias.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-neutral-400">→</span>
-              Your 5-stars become visible to friends (if you choose)
-            </li>
-            <li className="flex gap-2">
-              <span className="text-neutral-400">→</span>
-              Your favorites populate &ldquo;Stayed&rdquo;
-            </li>
-          </ul>
-          <Link href="/import" className="inline-block mt-4 text-sm text-[#1f1a17] hover:underline">
-            Import your library →
-          </Link>
-        </div>
-
-        <p className="text-sm text-neutral-500 leading-relaxed">
-          If someone you follow has read 40 books, you might see only one — or none — of them. That&apos;s intentional.
-        </p>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          TIME MATTERS
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16">
-        <h2 className="text-lg font-semibold text-[#1f1a17] mb-4">
-          Time matters
-        </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed">
-          Books can surface months or years after someone reads them — when they&apos;re still being thought about.
-        </p>
-        <p className="text-sm text-neutral-400 mt-3">
-          GreatReads doesn&apos;t rush. It prefers older, meaningful signals over recent noise.
-        </p>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          CLOSING
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="mb-16 text-center py-8 border-y border-black/5">
-        <p className="text-[15px] text-neutral-600 leading-relaxed italic mb-4">
-          If a book shows up here, it&apos;s because it earned its place.
-        </p>
-        <p className="text-sm text-neutral-500">
-          The result is a small, quiet library you can trust.
-        </p>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          MORE DETAILS (collapsible)
-      ═══════════════════════════════════════════════════════════════════ */}
-      <details className="mb-16 group">
-        <summary className="text-sm text-neutral-400 cursor-pointer hover:text-neutral-600 transition-colors list-none flex items-center gap-1.5">
-          <span className="text-xs group-open:rotate-90 transition-transform">›</span>
-          Technical details
-        </summary>
-        <div className="mt-4 pl-4 border-l-2 border-neutral-100 space-y-3 text-sm text-neutral-500 leading-relaxed">
-          <p>Data is updated periodically, not constantly.</p>
-          <p>Nothing is shared publicly unless you choose to share it.</p>
-          <p>Sources are polled daily for new five-star ratings.</p>
-        </div>
-      </details>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          FOOTER
-      ═══════════════════════════════════════════════════════════════════ */}
-      <footer className="pt-8 border-t border-black/5">
         <Link
           href="/feed"
-          className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-[#1f1a17] bg-neutral-100 rounded-xl hover:bg-neutral-200 transition-colors"
         >
-          ← Back to Signals
+          <span>←</span>
+          <span>Back to Signals</span>
         </Link>
-
-        {/* Meta note */}
-        <p className="mt-12 text-xs text-neutral-300 text-center">
-          This page exists for people who like to understand systems.
-        </p>
       </footer>
     </div>
   );

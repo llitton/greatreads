@@ -10,10 +10,19 @@ import {
   detectRating,
 } from '@/lib/rss/parser';
 import { normalizeGoodreadsText } from '@/lib/text/normalize';
+import { RssSourceStatus, FailureReasonCode } from '@prisma/client';
 
 // Vercel Cron configuration
 export const maxDuration = 300; // 5 minutes max
 export const dynamic = 'force-dynamic';
+
+// Constants for backoff and limits
+const MAX_PAGES_PER_RUN = 10;
+const MAX_ITEMS_PER_RUN = 500;
+const MAX_TIME_PER_SOURCE_MS = 20000; // 20 seconds per source
+const BASE_BACKOFF_MINUTES = 5;
+const MAX_BACKOFF_HOURS = 24;
+const FAILURES_BEFORE_HARD_FAIL = 5;
 
 const parser = new Parser({
   customFields: {
@@ -33,11 +42,67 @@ const parser = new Parser({
 });
 
 /**
+ * Calculate next attempt time using exponential backoff
+ */
+function calculateNextAttempt(consecutiveFailures: number, retryAfter?: number): Date {
+  if (retryAfter) {
+    // Honor Retry-After header
+    return new Date(Date.now() + retryAfter * 1000);
+  }
+
+  // Exponential backoff: min(24h, 2^failures * 5m) with jitter
+  const backoffMinutes = Math.min(
+    MAX_BACKOFF_HOURS * 60,
+    Math.pow(2, consecutiveFailures) * BASE_BACKOFF_MINUTES
+  );
+  const jitterMs = Math.random() * 60000; // Up to 1 minute jitter
+  return new Date(Date.now() + backoffMinutes * 60 * 1000 + jitterMs);
+}
+
+/**
+ * Categorize HTTP error into failure reason
+ */
+function categorizeHttpError(status: number): FailureReasonCode {
+  if (status === 401 || status === 403) return 'UNAUTHORIZED';
+  if (status === 404) return 'NOT_FOUND';
+  if (status === 429) return 'RATE_LIMITED';
+  if (status >= 500) return 'SERVER_ERROR';
+  return 'UNKNOWN';
+}
+
+/**
+ * Check if response looks like HTML instead of RSS
+ */
+function looksLikeHtml(text: string): boolean {
+  const trimmed = text.trim().toLowerCase();
+  return (
+    trimmed.startsWith('<!doctype html') ||
+    trimmed.startsWith('<html') ||
+    (trimmed.includes('<body') && !trimmed.includes('<rss') && !trimmed.includes('<feed'))
+  );
+}
+
+/**
  * Generate a stable deduplication hash for an RSS item
  */
 function generateDedupHash(sourceId: string, item: { guid?: string; link?: string; title?: string }): string {
   const key = item.guid || item.link || item.title || '';
   return crypto.createHash('sha256').update(`${sourceId}:${key}`).digest('hex').substring(0, 32);
+}
+
+/**
+ * Generate a stable item key for tracking last seen item
+ */
+function generateItemKey(item: { guid?: string; link?: string; title?: string; isoDate?: string }): string {
+  // Prefer guid if it looks stable, else link, else hash of content
+  if (item.guid && !item.guid.includes('?')) {
+    return item.guid;
+  }
+  if (item.link) {
+    return item.link;
+  }
+  const content = `${item.title || ''}|${item.isoDate || ''}`;
+  return crypto.createHash('sha256').update(content).digest('hex').substring(0, 16);
 }
 
 /**
@@ -53,7 +118,7 @@ function extractIsbn(item: Record<string, unknown>): string | null {
 /**
  * GET /api/rss/cron/fetch
  *
- * Polls all active RSS sources and creates new inbox items.
+ * Polls all active/backoff RSS sources and creates new inbox items.
  * Called by Vercel Cron or manually with CRON_SECRET.
  */
 export async function GET(request: NextRequest) {
@@ -70,28 +135,47 @@ export async function GET(request: NextRequest) {
   const results = {
     sourcesProcessed: 0,
     sourcesErrored: 0,
+    sourcesSkipped: 0,
     itemsCreated: 0,
     itemsSkipped: 0,
-    errors: [] as Array<{ sourceId: string; url: string; error: string }>,
+    errors: [] as Array<{ sourceId: string; url: string; error: string; status: string }>,
   };
 
   try {
-    // Get all active RSS sources
+    const now = new Date();
+
+    // Get sources that are ready to be polled:
+    // - ACTIVE sources (always ready)
+    // - BACKOFF sources where nextAttemptAt <= now
     const sources = await prisma.rssSource.findMany({
-      where: { isActive: true },
+      where: {
+        OR: [
+          { status: 'ACTIVE' },
+          {
+            status: 'BACKOFF',
+            nextAttemptAt: { lte: now },
+          },
+        ],
+      },
       select: {
         id: true,
         userId: true,
         url: true,
         title: true,
+        etag: true,
+        lastModified: true,
+        lastSuccessAt: true,
+        lastSeenItemKey: true,
+        consecutiveFailures: true,
       },
     });
 
-    console.log(`[RSS Cron] Processing ${sources.length} active sources`);
+    console.log(`[RSS Cron] Processing ${sources.length} sources ready for polling`);
 
     for (const source of sources) {
       try {
-        await processSource(source, results);
+        const sourceStartTime = Date.now();
+        await processSource(source, results, sourceStartTime);
         results.sourcesProcessed++;
       } catch (error) {
         results.sourcesErrored++;
@@ -100,17 +184,8 @@ export async function GET(request: NextRequest) {
           sourceId: source.id,
           url: source.url,
           error: errorMessage,
+          status: 'error',
         });
-
-        // Update source with error
-        await prisma.rssSource.update({
-          where: { id: source.id },
-          data: {
-            lastError: errorMessage,
-            lastFetchedAt: new Date(),
-          },
-        });
-
         console.error(`[RSS Cron] Error processing source ${source.id}:`, errorMessage);
       }
     }
@@ -136,38 +211,153 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Process a single RSS source
+ * Process a single RSS source with state machine transitions
  */
 async function processSource(
-  source: { id: string; userId: string; url: string; title: string | null },
-  results: { itemsCreated: number; itemsSkipped: number }
+  source: {
+    id: string;
+    userId: string;
+    url: string;
+    title: string | null;
+    etag: string | null;
+    lastModified: string | null;
+    lastSuccessAt: Date | null;
+    lastSeenItemKey: string | null;
+    consecutiveFailures: number;
+  },
+  results: { itemsCreated: number; itemsSkipped: number; sourcesSkipped: number },
+  sourceStartTime: number
 ) {
-  // Fetch RSS feed
-  const response = await fetch(source.url, {
-    headers: {
-      'User-Agent': 'GreatReads/1.0 (RSS Reader)',
-    },
-    next: { revalidate: 0 },
-  });
+  const now = new Date();
+  let response: Response;
+  let httpStatus: number;
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  // Build headers for conditional GET
+  const headers: HeadersInit = {
+    'User-Agent': 'GreatReads/1.0 (RSS Reader)',
+  };
+  if (source.etag) {
+    headers['If-None-Match'] = source.etag;
+  }
+  if (source.lastModified) {
+    headers['If-Modified-Since'] = source.lastModified;
   }
 
-  const xml = await response.text();
-  const feed = await parser.parseString(xml);
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), MAX_TIME_PER_SOURCE_MS);
 
-  // Update source title if we got one from the feed
-  if (feed.title && !source.title) {
+    response = await fetch(source.url, {
+      headers,
+      signal: controller.signal,
+      next: { revalidate: 0 },
+    });
+
+    clearTimeout(timeout);
+    httpStatus = response.status;
+  } catch (error) {
+    // Network error or timeout
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
+    await handleSoftFailure(
+      source.id,
+      source.consecutiveFailures,
+      isTimeout ? 'TIMEOUT' : 'UNKNOWN',
+      null,
+      isTimeout ? 'Request timed out' : (error instanceof Error ? error.message : 'Network error')
+    );
+    throw error;
+  }
+
+  // Handle 304 Not Modified (no new content)
+  if (httpStatus === 304) {
     await prisma.rssSource.update({
       where: { id: source.id },
-      data: { title: feed.title },
+      data: {
+        lastAttemptAt: now,
+        // Don't update lastSuccessAt - no actual fetch happened
+      },
     });
+    results.sourcesSkipped++;
+    console.log(`[RSS Cron] Source ${source.id}: not modified (304)`);
+    return;
   }
 
-  // Process each item
+  // Handle HTTP errors
+  if (!response.ok) {
+    const isSoftFail = httpStatus === 429 || httpStatus >= 500;
+    const retryAfter = httpStatus === 429 ? parseRetryAfter(response.headers.get('Retry-After')) : undefined;
+
+    if (isSoftFail) {
+      await handleSoftFailure(
+        source.id,
+        source.consecutiveFailures,
+        categorizeHttpError(httpStatus),
+        httpStatus,
+        `HTTP ${httpStatus}: ${response.statusText}`,
+        retryAfter
+      );
+    } else {
+      // Hard failure (4xx except 429)
+      await handleHardFailure(
+        source.id,
+        categorizeHttpError(httpStatus),
+        httpStatus,
+        `HTTP ${httpStatus}: ${response.statusText}`
+      );
+    }
+    throw new Error(`HTTP ${httpStatus}: ${response.statusText}`);
+  }
+
+  // Parse response
+  const xml = await response.text();
+
+  // Check if response is HTML instead of RSS
+  if (looksLikeHtml(xml)) {
+    await handleHardFailure(
+      source.id,
+      'NOT_FEED',
+      httpStatus,
+      'Response is HTML, not RSS/Atom feed'
+    );
+    throw new Error('Response is HTML, not RSS/Atom feed');
+  }
+
+  let feed;
+  try {
+    feed = await parser.parseString(xml);
+  } catch (parseError) {
+    await handleHardFailure(
+      source.id,
+      'PARSE_ERROR',
+      httpStatus,
+      `Failed to parse feed: ${parseError instanceof Error ? parseError.message : 'Invalid XML'}`
+    );
+    throw parseError;
+  }
+
+  // Update source title if we got one from the feed
+  const newEtag = response.headers.get('ETag');
+  const newLastModified = response.headers.get('Last-Modified');
+
+  // Process items
+  let newItemsCount = 0;
+  let latestItemKey = source.lastSeenItemKey;
+
   for (const item of feed.items) {
+    // Check time limit
+    if (Date.now() - sourceStartTime > MAX_TIME_PER_SOURCE_MS) {
+      console.log(`[RSS Cron] Source ${source.id}: time limit reached`);
+      break;
+    }
+
+    // Check items limit
+    if (newItemsCount >= MAX_ITEMS_PER_RUN) {
+      console.log(`[RSS Cron] Source ${source.id}: items limit reached`);
+      break;
+    }
+
     const dedupHash = generateDedupHash(source.id, item);
+    const itemKey = generateItemKey(item);
 
     // Check if we already have this item
     const existing = await prisma.rssItem.findUnique({
@@ -220,17 +410,115 @@ async function processSource(
       },
     });
 
+    newItemsCount++;
     results.itemsCreated++;
+
+    // Track the latest item key
+    if (!latestItemKey) {
+      latestItemKey = itemKey;
+    }
   }
 
-  // Update source lastFetchedAt, clear any previous error
+  // Update source on success
   await prisma.rssSource.update({
     where: { id: source.id },
     data: {
-      lastFetchedAt: new Date(),
+      status: 'ACTIVE',
+      failureReasonCode: 'NONE',
+      lastSuccessAt: now,
+      lastAttemptAt: now,
+      nextAttemptAt: null,
+      consecutiveFailures: 0,
+      lastHttpStatus: httpStatus,
       lastError: null,
+      etag: newEtag || source.etag,
+      lastModified: newLastModified || source.lastModified,
+      lastSeenItemKey: latestItemKey,
+      title: feed.title && !source.title ? feed.title : source.title,
     },
   });
 
-  console.log(`[RSS Cron] Source ${source.id} (${source.title || source.url}): created ${results.itemsCreated} items`);
+  console.log(`[RSS Cron] Source ${source.id} (${source.title || source.url}): created ${newItemsCount} items`);
+}
+
+/**
+ * Handle soft failure (recoverable - goes to BACKOFF)
+ */
+async function handleSoftFailure(
+  sourceId: string,
+  currentFailures: number,
+  reasonCode: FailureReasonCode,
+  httpStatus: number | null,
+  errorMessage: string,
+  retryAfter?: number
+) {
+  const newFailures = currentFailures + 1;
+
+  // If we've failed too many times, escalate to hard failure
+  if (newFailures >= FAILURES_BEFORE_HARD_FAIL) {
+    await handleHardFailure(sourceId, reasonCode, httpStatus, `${errorMessage} (after ${newFailures} attempts)`);
+    return;
+  }
+
+  const nextAttempt = calculateNextAttempt(newFailures, retryAfter);
+
+  await prisma.rssSource.update({
+    where: { id: sourceId },
+    data: {
+      status: 'BACKOFF',
+      failureReasonCode: reasonCode,
+      lastAttemptAt: new Date(),
+      nextAttemptAt: nextAttempt,
+      consecutiveFailures: newFailures,
+      lastHttpStatus: httpStatus,
+      lastError: errorMessage,
+    },
+  });
+
+  console.log(`[RSS Cron] Source ${sourceId}: soft failure (${reasonCode}), retry at ${nextAttempt.toISOString()}`);
+}
+
+/**
+ * Handle hard failure (requires user action - goes to FAILED)
+ */
+async function handleHardFailure(
+  sourceId: string,
+  reasonCode: FailureReasonCode,
+  httpStatus: number | null,
+  errorMessage: string
+) {
+  await prisma.rssSource.update({
+    where: { id: sourceId },
+    data: {
+      status: 'FAILED',
+      failureReasonCode: reasonCode,
+      lastAttemptAt: new Date(),
+      nextAttemptAt: null,
+      lastHttpStatus: httpStatus,
+      lastError: errorMessage,
+    },
+  });
+
+  console.log(`[RSS Cron] Source ${sourceId}: hard failure (${reasonCode}): ${errorMessage}`);
+}
+
+/**
+ * Parse Retry-After header value
+ */
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+
+  // Try parsing as seconds
+  const seconds = parseInt(value, 10);
+  if (!isNaN(seconds)) {
+    return seconds;
+  }
+
+  // Try parsing as HTTP date
+  const date = new Date(value);
+  if (!isNaN(date.getTime())) {
+    return Math.max(0, Math.floor((date.getTime() - Date.now()) / 1000));
+  }
+
+  return undefined;
 }

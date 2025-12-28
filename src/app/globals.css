@@ -1,6 +1,58 @@
 @import "tailwindcss";
 
 :root {
+  /* ═══════════════════════════════════════════════════════════════════
+     SPACING SCALE - Core: 4 / 8 / 12 (xs / sm / md)
+     Extended: 20 / 32 for page-level rhythm
+
+     xs (4px):  micro-gaps, icon-to-text, badge gap
+     sm (8px):  default gap, row spacing, badge padX
+     md (12px): section spacing inside panels
+
+     Derived: 0.5 (2px) - only for badge padY with small text
+     Ban: 16, 24, 28 - if you want those, redesign
+  ═══════════════════════════════════════════════════════════════════ */
+  --space-0_5: 2px;  /* derived half-step, badges only */
+  --space-1: 4px;    /* xs */
+  --space-2: 8px;    /* sm */
+  --space-3: 12px;   /* md */
+  --space-4: 20px;   /* lg - between components */
+  --space-5: 32px;   /* xl - page sections */
+
+  /* ═══════════════════════════════════════════════════════════════════
+     BADGE / PILL TOKENS
+
+     A pill is a label for small states (New, Seen, Beta).
+     Must size to content and remain visually stable.
+
+     DO NOT:
+     - Use line-height hacks to set height
+     - Use border-radius: 50%
+     - Hardcode width/height
+     - Create one-off badge CSS in a page file
+  ═══════════════════════════════════════════════════════════════════ */
+  --badge-font-size: 11px;
+  --badge-font-weight: 600;
+  --badge-line-height: 1;
+  --badge-radius: 999px;
+  --badge-pad-x: var(--space-2);    /* 8px */
+  --badge-pad-y: var(--space-0_5);  /* 2px */
+  --badge-gap: var(--space-1);      /* 4px */
+
+  /* Badge color variants */
+  --badge-default-bg: #f5f5f4;
+  --badge-default-fg: #737373;
+  --badge-new-bg: #efe7da;
+  --badge-new-fg: #6b4f2d;
+  --badge-seen-bg: #f5f5f4;
+  --badge-seen-fg: #a3a3a3;
+  --badge-active-bg: #dcfce7;
+  --badge-active-fg: #166534;
+  --badge-muted-bg: #fafafa;
+  --badge-muted-fg: #d4d4d4;
+  --badge-danger-bg: #fee2e2;
+  --badge-danger-fg: #991b1b;
+
   /* Warm, bookish color palette inspired by Goodreads */
   --color-cream: #faf6f0;
   --color-parchment: #f5f0e6;
@@ -29,6 +81,14 @@
 @theme inline {
   --font-serif: "Merriweather", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Spacing scale tokens - use p-space-1, gap-space-2, m-space-3, etc. */
+  --spacing-space-0_5: 2px;  /* derived, badges only */
+  --spacing-space-1: 4px;    /* xs */
+  --spacing-space-2: 8px;    /* sm */
+  --spacing-space-3: 12px;   /* md */
+  --spacing-space-4: 20px;   /* lg */
+  --spacing-space-5: 32px;   /* xl */
 
   --color-cream: #faf6f0;
   --color-parchment: #f5f0e6;
@@ -205,26 +265,48 @@ a:hover {
   color: var(--color-gold);
 }
 
-/* Badge */
+/* ═══════════════════════════════════════════════════════════════════
+   BADGE - Use StatusPill component instead of these classes
+   These are kept for backwards compatibility only
+═══════════════════════════════════════════════════════════════════ */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border-radius: 9999px;
-  background: var(--color-parchment);
-  color: var(--color-brown);
+  justify-content: center;
+  padding: var(--badge-pad-y) var(--badge-pad-x);
+  gap: var(--badge-gap);
+  font-size: var(--badge-font-size);
+  font-weight: var(--badge-font-weight);
+  line-height: var(--badge-line-height);
+  border-radius: var(--badge-radius);
+  background: var(--badge-default-bg);
+  color: var(--badge-default-fg);
+  white-space: nowrap;
+}
+
+.badge-new {
+  background: var(--badge-new-bg);
+  color: var(--badge-new-fg);
 }
 
 .badge-success {
-  background: rgba(74, 124, 89, 0.1);
-  color: var(--color-green);
+  background: var(--badge-active-bg);
+  color: var(--badge-active-fg);
 }
 
 .badge-warning {
   background: rgba(212, 168, 85, 0.2);
   color: var(--color-brown);
+}
+
+.badge-muted {
+  background: var(--badge-muted-bg);
+  color: var(--badge-muted-fg);
+}
+
+.badge-danger {
+  background: var(--badge-danger-bg);
+  color: var(--badge-danger-fg);
 }
 
 /* Drag and drop styles */

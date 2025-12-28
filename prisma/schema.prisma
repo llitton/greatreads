@@ -108,6 +108,11 @@ model Book {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  // Cover enrichment fields
+  coverSource      CoverSource?      // Where the cover came from
+  coverConfidence  CoverConfidence?  // How confident we are in the match
+  coverUpdatedAt   DateTime?         // When the cover was last fetched/updated
+
   events           FriendFiveStarEvent[]
   userBookStatuses UserBookStatus[]
   topTenItems      TopTenItem[]
@@ -117,6 +122,7 @@ model Book {
   @@index([isbn])
   @@index([isbn13])
   @@index([goodreadsBookId])
+  @@index([coverUrl])  // For finding books missing covers
 }
 
 model FriendFiveStarEvent {
@@ -147,6 +153,20 @@ enum BookStatus {
   WANT_TO_READ
   READING
   READ
+}
+
+enum CoverSource {
+  OPENLIBRARY_ISBN
+  OPENLIBRARY_SEARCH
+  GOOGLEBOOKS
+  GOODREADS
+  MANUAL
+}
+
+enum CoverConfidence {
+  HIGH    // ISBN match found + cover exists
+  MEDIUM  // Title/author search match with strong similarity
+  LOW     // Weak match but has an image (put in review queue)
 }
 
 model UserBookStatus {
@@ -276,6 +296,28 @@ model GoodreadsImport {
 // RSS Inbox System
 // ═══════════════════════════════════════════════════════════════════
 
+enum RssSourceStatus {
+  DRAFT       // Created, not yet validated
+  VALIDATING  // One-off fetch to confirm URL + parseability
+  ACTIVE      // Cron should poll it
+  PAUSED      // User paused it (never auto-resume)
+  BACKOFF     // Temporarily failing; cron should retry later
+  FAILED      // Hard failure, requires user action
+}
+
+enum FailureReasonCode {
+  NONE
+  NOT_FEED        // Response is HTML, not RSS/Atom
+  UNAUTHORIZED    // 401/403
+  NOT_FOUND       // 404
+  PARSE_ERROR     // Invalid XML or malformed feed
+  TIMEOUT         // Request timed out
+  RATE_LIMITED    // 429
+  SERVER_ERROR    // 5xx
+  PAGINATION_LOOP // Infinite pagination detected
+  UNKNOWN
+}
+
 model RssSource {
   id            String    @id @default(cuid())
   userId        String
@@ -286,9 +328,29 @@ model RssSource {
   description   String?   @db.Text
   siteUrl       String?   @db.Text
 
+  // State machine
+  status              RssSourceStatus   @default(DRAFT)
+  failureReasonCode   FailureReasonCode @default(NONE)
+
+  // Timing fields
+  lastSuccessAt       DateTime?   // Last successful fetch
+  lastAttemptAt       DateTime?   // Last attempt (success or fail)
+  nextAttemptAt       DateTime?   // When to retry (for backoff)
+
+  // Failure tracking
+  consecutiveFailures Int         @default(0)
+  lastHttpStatus      Int?        // Last HTTP status code
+  lastError           String?     @db.Text  // Human-readable error message
+
+  // Conditional GET (HTTP caching)
+  etag                String?
+  lastModified        String?     // Last-Modified header value
+
+  // Dedupe tracking
+  lastSeenItemKey     String?     // For dedupe + "no items yet" logic
+
+  // Legacy field (deprecated, use status instead)
   isActive      Boolean   @default(true)
-  lastFetchedAt DateTime?
-  lastError     String?   @db.Text
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -296,7 +358,8 @@ model RssSource {
   items         RssItem[]
 
   @@unique([userId, url])
-  @@index([userId, isActive])
+  @@index([userId, status])
+  @@index([status, nextAttemptAt])
 }
 
 model RssItem {

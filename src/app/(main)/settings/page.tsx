@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SignalAttribution, createSignal } from '@/components/ui/signal-attribution';
 
 interface UserSettings {
   id: string;
@@ -13,7 +13,7 @@ interface UserSettings {
   notifySms: boolean;
 }
 
-// Toggle switch component - modern, accessible
+// Toggle switch component
 function Toggle({
   checked,
   onChange,
@@ -43,53 +43,20 @@ function Toggle({
   );
 }
 
-// Clickable toggle row - whole row toggles the switch
-function ToggleRow({
-  label,
-  description,
-  checked,
-  onChange,
-  id,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  id: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className="w-full flex items-start justify-between gap-6 p-4 -mx-4 rounded-xl hover:bg-neutral-50 transition-colors text-left cursor-pointer"
-    >
-      <div className="flex-1 min-w-0">
-        <label htmlFor={id} className="text-[15px] font-medium text-[#1f1a17] cursor-pointer">
-          {label}
-        </label>
-        <p className="text-sm text-neutral-500 leading-relaxed mt-0.5">
-          {description}
-        </p>
-      </div>
-      <div className="flex-shrink-0 pt-0.5">
-        <Toggle checked={checked} onChange={onChange} id={id} />
-      </div>
-    </button>
-  );
-}
-
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Form state
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [notifyEmail, setNotifyEmail] = useState(true);
   const [notifySms, setNotifySms] = useState(false);
+
+  // Editing state
+  const [editingName, setEditingName] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -111,285 +78,325 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    setError('');
-
+  // Auto-save on changes
+  const saveSettings = useCallback(async (updates: Partial<{
+    name: string;
+    phone: string | null;
+    notifyEmail: boolean;
+    notifySms: boolean;
+  }>) => {
+    setSaveStatus('saving');
     try {
       const res = await fetch('/api/user/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name || undefined,
-          phone: phone || null,
-          notifyEmail,
-          notifySms,
-        }),
+        body: JSON.stringify(updates),
       });
 
       if (res.ok) {
-        setSaved(true);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
         fetchSettings();
-        // Clear saved message after 3 seconds
-        setTimeout(() => setSaved(false), 3000);
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to save settings');
       }
     } catch {
-      setError('Failed to save settings');
-    } finally {
-      setSaving(false);
+      setSaveStatus('idle');
     }
+  }, []);
+
+  const handleNameSave = () => {
+    setEditingName(false);
+    saveSettings({ name: name || undefined });
+  };
+
+  const handlePhoneSave = () => {
+    setEditingPhone(false);
+    saveSettings({ phone: phone || null });
+  };
+
+  const handleToggleEmail = (checked: boolean) => {
+    setNotifyEmail(checked);
+    saveSettings({ notifyEmail: checked });
+  };
+
+  const handleToggleSms = (checked: boolean) => {
+    setNotifySms(checked);
+    saveSettings({ notifySms: checked });
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">⚙️</div>
-          <p className="text-neutral-500">Loading settings...</p>
+          <div className="text-4xl mb-4 opacity-50">◌</div>
+          <p className="text-neutral-400 text-sm">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      {/* Page header - philosophy framing */}
-      <header className="mb-12">
-        <h1 className="text-2xl font-semibold text-[#1f1a17] mb-2">
+    <div className="max-w-xl mx-auto px-5 py-8">
+      {/* Header */}
+      <header className="mb-16">
+        <h1 className="text-2xl font-serif text-[#1f1a17] mb-3">
           Settings
         </h1>
-        <p className="text-[17px] text-neutral-500 leading-relaxed mb-2">
-          Manage how GreatReads works for you.
-        </p>
-        <p className="text-sm text-neutral-400 italic">
-          Designed to be quiet, respectful, and intentional.
+        <p className="text-[15px] text-neutral-500 leading-relaxed">
+          How GreatReads works for you.
         </p>
       </header>
 
-      <div className="space-y-8">
-        {/* Identity card - separates account from authorship */}
-        <section className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-          <div className="p-6 pb-0">
-            <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
-              Identity
-            </h2>
-            <p className="text-sm text-neutral-500 leading-relaxed">
-              One person reads. Another person&apos;s taste shapes the recommendations.
-            </p>
-          </div>
+      {/* Save indicator - subtle, inline */}
+      {saveStatus !== 'idle' && (
+        <div className="fixed top-5 right-5 z-50">
+          <span className={`text-xs px-3 py-2 rounded-full ${
+            saveStatus === 'saving'
+              ? 'bg-neutral-100 text-neutral-500'
+              : 'bg-emerald-50 text-emerald-600'
+          }`}>
+            {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
+          </span>
+        </div>
+      )}
 
-          <div className="p-6 space-y-6">
-            {/* Account holder */}
-            <div>
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
-                Who uses this app
-              </p>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Mark"
-                className="w-full h-11 px-4 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 focus:border-transparent transition-all"
-              />
-              <p className="text-xs text-neutral-400 mt-2">
-                The person browsing and discovering.
-              </p>
-            </div>
-
-            {/* Recommendation credit - shows source of taste */}
-            <div className="pt-4 border-t border-black/5">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
-                Whose taste shapes recommendations
-              </p>
-              <div className="flex items-center gap-3 h-11 px-4 bg-amber-50/50 rounded-xl border border-amber-100">
-                <span className="text-[15px] font-medium text-[#1f1a17]">
-                  Laura
-                </span>
-              </div>
-              <p className="text-xs text-neutral-500 mt-2">
-                Appears as: <span className="text-amber-600 font-medium">&ldquo;Loved by Laura&rdquo;</span>
-              </p>
-            </div>
-
-            {/* Email - de-emphasized */}
-            <div className="pt-4 border-t border-black/5">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
-                Sign-in email
-              </p>
-              <div className="flex items-center gap-3 h-11 px-4 bg-neutral-50 rounded-xl border border-black/5">
-                <span className="text-[15px] text-neutral-600">
-                  {settings?.email}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Reading history - shows import source as provenance */}
-        <section className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-          <div className="p-6 pb-0">
-            <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
-              Source of truth
-            </h2>
-            <p className="text-sm text-neutral-500 leading-relaxed">
-              Where recommendations come from.
-            </p>
-          </div>
-
-          <div className="p-6">
-            <div className="flex items-start justify-between gap-6 p-4 bg-[#faf8f5] rounded-xl border border-[#f0ebe3]">
-              <div className="flex-1">
-                <p className="text-[15px] font-medium text-[#1f1a17] mb-1">
-                  Goodreads library
-                </p>
-                <p className="text-sm text-neutral-500 leading-relaxed">
-                  Laura&apos;s reading history, imported via CSV.
-                </p>
-                <p className="text-xs text-neutral-400 mt-2 italic">
-                  No ratings were changed. Only 5-stars appear.
-                </p>
-              </div>
-              <a
-                href="/import"
-                className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors flex-shrink-0"
-              >
-                Re-import →
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* Signals you want to receive */}
-        <section className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-          <div className="p-6 pb-0">
-            <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
-              Signals you want to receive
-            </h2>
-            <p className="text-sm text-neutral-500 leading-relaxed">
-              Rare by design. Only strong signals.
-            </p>
-          </div>
-
-          <div className="p-6 space-y-2">
-            {/* Email notifications - clickable row */}
-            <ToggleRow
-              id="notify-email"
-              label="Notify me when someone I trust gives a book five stars"
-              description="Only when someone you follow really loved something."
-              checked={notifyEmail}
-              onChange={setNotifyEmail}
-            />
-
-            {/* Divider */}
-            <div className="border-t border-black/5 mx-4" />
-
-            {/* SMS notifications - clickable row */}
-            <ToggleRow
-              id="notify-sms"
-              label="Text me about exceptional picks"
-              description="Fewer than a handful per year. Reserved for books that truly stand out."
-              checked={notifySms}
-              onChange={setNotifySms}
-            />
-
-            {/* Phone number input - shown when SMS is enabled */}
-            {notifySms && (
-              <div className="pt-4 pl-4 pr-4 animate-fadeIn">
-                <label className="block text-sm font-medium text-[#1f1a17] mb-2">
-                  Phone number
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
-                  className="w-full h-11 px-4 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10 focus:border-transparent transition-all"
-                />
-                <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
-                  Standard messaging rates may apply.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Card footer with save */}
-          <div className="px-6 py-4 bg-neutral-50 border-t border-black/5 flex items-center justify-end gap-4">
-            {saved && (
-              <span className="text-sm text-emerald-600 animate-fadeIn flex items-center gap-1.5">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Saved
-              </span>
-            )}
-            {error && (
-              <span className="text-sm text-red-600">
-                {error}
-              </span>
-            )}
-            <Button onClick={handleSave} loading={saving}>
-              Save Changes
-            </Button>
-          </div>
-        </section>
-
-        {/* Principles - manifesto, not footer */}
-        <section className="bg-neutral-50 rounded-2xl p-8">
-          <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide mb-6">
-            Principles
+      <div className="space-y-16">
+        {/* ═══════════════════════════════════════════════════════════════════
+            PERSPECTIVE - Identity as declarations, not inputs
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-8">
+            Perspective
           </h2>
-          <div className="space-y-3 text-[15px] text-neutral-600 leading-relaxed">
-            <p>No ads</p>
-            <p>No tracking</p>
-            <p>No engagement tricks</p>
-            <p className="pt-2 text-neutral-500">Your data is yours.</p>
+
+          <div className="space-y-8">
+            {/* Who uses this app - declarative first */}
+            <div>
+              <p className="text-xs text-neutral-400 mb-2">This library is for</p>
+              {!editingName ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-medium text-[#1f1a17]">
+                      {name || 'Mark'}
+                    </p>
+                    <p className="text-sm text-neutral-400">
+                      The person browsing and discovering.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setEditingName(true)}
+                    className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Name"
+                    autoFocus
+                    className="w-full h-11 px-3 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleNameSave}
+                      className="px-3 py-2 text-sm font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingName(false);
+                        setName(settings?.name || '');
+                      }}
+                      className="px-3 py-2 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Separator */}
+            <div className="h-px bg-neutral-100" />
+
+            {/* Signal attribution preview */}
+            <div>
+              <p className="text-xs text-neutral-400 mb-2">When you rate 5 stars</p>
+              <div>
+                <p className="text-lg font-medium text-[#1f1a17]">
+                  Laura
+                </p>
+                <p className="text-sm text-neutral-400">
+                  Appears as{' '}
+                  <SignalAttribution
+                    signal={createSignal({
+                      type: 'five_star',
+                      sourcePersonId: 'laura',
+                      sourcePersonName: 'Laura',
+                      sourceKind: 'person',
+                    })}
+                    variant="inline"
+                    showStars={true}
+                    className="text-amber-600"
+                  />
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Danger Zone card */}
-        <section className="bg-white rounded-2xl border border-red-100 overflow-hidden">
-          <div className="p-6 pb-0">
-            <h2 className="text-lg font-semibold text-red-600 mb-1">
-              Danger Zone
-            </h2>
-            <p className="text-sm text-neutral-500 leading-relaxed">
-              We don&apos;t believe in trapping people here.
-            </p>
-          </div>
+        {/* ═══════════════════════════════════════════════════════════════════
+            SIGNALS - Commitments, not toggles
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-8">
+            How you want to be interrupted
+          </h2>
 
-          <div className="p-6">
-            <div className="flex items-start justify-between gap-6 p-4 bg-red-50/50 rounded-xl">
-              <div className="flex-1">
-                <p className="text-[15px] font-medium text-[#1f1a17] mb-0.5">
-                  Delete account
-                </p>
-                <p className="text-sm text-neutral-500 leading-relaxed">
-                  Permanently delete your account and all your reading data. This cannot be undone.
-                </p>
+          <div className="space-y-5">
+            {/* Five-star notifications */}
+            <div className="p-5 bg-[#fdfcfa] rounded-2xl border border-[#f0ebe3]">
+              <div className="flex items-start justify-between gap-5">
+                <div className="flex-1">
+                  <p className="text-[15px] font-medium text-[#1f1a17] mb-1">
+                    Five-star notifications
+                  </p>
+                  <p className="text-sm text-neutral-500 leading-relaxed">
+                    I want to know when someone I trust truly loved something.
+                  </p>
+                </div>
+                <Toggle
+                  checked={notifyEmail}
+                  onChange={handleToggleEmail}
+                  id="notify-email"
+                />
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex-shrink-0 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300"
-              >
-                Delete
-              </Button>
             </div>
+
+            {/* Exceptional picks */}
+            <div className="p-5 bg-[#fdfcfa] rounded-2xl border border-[#f0ebe3]">
+              <div className="flex items-start justify-between gap-5">
+                <div className="flex-1">
+                  <p className="text-[15px] font-medium text-[#1f1a17] mb-1">
+                    Exceptional picks (SMS)
+                  </p>
+                  <p className="text-sm text-neutral-500 leading-relaxed">
+                    Interrupt me rarely. Only when it really matters.
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-2">
+                    Most people receive 2–4 of these per year.
+                  </p>
+                </div>
+                <Toggle
+                  checked={notifySms}
+                  onChange={handleToggleSms}
+                  id="notify-sms"
+                />
+              </div>
+
+              {/* Phone number - shown when SMS enabled */}
+              {notifySms && (
+                <div className="mt-5 pt-5 border-t border-[#f0ebe3]">
+                  {!editingPhone ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-1">Phone</p>
+                        <p className="text-sm text-[#1f1a17]">
+                          {phone || 'Not set'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setEditingPhone(true)}
+                        className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                      >
+                        {phone ? 'Change' : 'Add'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+1 (555) 123-4567"
+                        autoFocus
+                        className="w-full h-11 px-3 text-[15px] bg-white border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handlePhoneSave}
+                          className="px-3 py-2 text-sm font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] transition-colors"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingPhone(false);
+                            setPhone(settings?.phone || '');
+                          }}
+                          className="px-3 py-2 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            WHAT GREATREADS PROMISES - A pact, not a footer
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section className="py-8 border-y border-neutral-100">
+          <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-8">
+            What GreatReads promises
+          </h2>
+
+          <div className="space-y-3">
+            <p className="text-[15px] text-neutral-600">No ads</p>
+            <p className="text-[15px] text-neutral-600">No tracking</p>
+            <p className="text-[15px] text-neutral-600">No engagement tricks</p>
+            <p className="text-[15px] text-neutral-600">Your data is yours</p>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            DANGER ZONE - Clear exit
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-start justify-between gap-5">
+            <div>
+              <p className="text-[15px] font-medium text-[#1f1a17] mb-1">
+                Delete account
+              </p>
+              <p className="text-sm text-neutral-500 leading-relaxed">
+                Permanently delete your account and all data.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+            >
+              Delete
+            </Button>
           </div>
         </section>
       </div>
 
-      {/* Quiet footer note */}
-      <footer className="mt-16 mb-4 text-center space-y-3">
-        <p className="text-sm text-neutral-400">
-          You can change any of this later.
-        </p>
-        <p className="text-sm text-neutral-300 italic">
-          GreatReads is built to stay out of the way.
+      {/* Footer - quiet finality */}
+      <footer className="mt-8 pt-8 border-t border-neutral-50 text-center">
+        <p className="text-sm text-neutral-300 italic leading-relaxed">
+          Nothing here is optimized for engagement.
+          <br />
+          Only for trust.
         </p>
       </footer>
     </div>
