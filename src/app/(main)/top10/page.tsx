@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Top10List } from '@/components/top10/top10-list';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { StatusPill } from '@/components/ui/status-pill';
 import Link from 'next/link';
 
 interface TopTenItem {
@@ -29,6 +30,18 @@ interface AvailableBook {
   title: string;
   author: string | null;
   coverUrl: string | null;
+}
+
+type AddBookMode = 'library' | 'search';
+
+interface ResolvedBook {
+  bookId: string;
+  title: string;
+  author: string | null;
+  coverUrl: string | null;
+  source: string;
+  confidence: string;
+  isNew: boolean;
 }
 
 // Preview books with real covers from Open Library
@@ -77,6 +90,14 @@ export default function Top10Page() {
   const [requestName, setRequestName] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
+
+  // Add book modal state
+  const [addBookMode, setAddBookMode] = useState<AddBookMode>('library');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchAuthor, setSearchAuthor] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [resolvedBook, setResolvedBook] = useState<ResolvedBook | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTopTen();
@@ -160,9 +181,62 @@ export default function Top10Page() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items: newItems }),
     });
-    setShowAddBook(false);
+    closeAddBookModal();
     fetchTopTen();
   };
+
+  const closeAddBookModal = () => {
+    setShowAddBook(false);
+    setAddBookMode('library');
+    setSearchQuery('');
+    setSearchAuthor('');
+    setResolvedBook(null);
+    setSearchError(null);
+  };
+
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    setSearchError(null);
+    setResolvedBook(null);
+
+    try {
+      // Detect if it's an ISBN or URL
+      const isIsbn = /^\d{10,13}$/.test(searchQuery.replace(/[-\s]/g, ''));
+      const isUrl = searchQuery.startsWith('http');
+
+      const res = await fetch('/api/books/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(isIsbn ? { isbn: searchQuery } : isUrl ? { url: searchQuery } : { query: searchQuery }),
+          author: searchAuthor || undefined,
+          title: !isIsbn && !isUrl ? searchQuery : undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setSearchError(data.error || 'Book not found');
+        return;
+      }
+
+      const book = await res.json();
+
+      // Check if already in Top 10
+      if (topTen?.items.some((item) => item.book.id === book.bookId)) {
+        setSearchError('This book is already in your Top 10');
+        return;
+      }
+
+      setResolvedBook(book);
+    } catch {
+      setSearchError('Failed to search. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery, searchAuthor, topTen]);
 
   const handleSendRequest = async () => {
     if (!requestEmail) return;
@@ -462,65 +536,198 @@ export default function Top10Page() {
         </p>
       </footer>
 
-      {/* Add book modal */}
+      {/* Add book modal - two modes */}
       {showAddBook && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-5 z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-[#1f1a17]">
-                Add to your Top 10
-              </h2>
-              <button
-                onClick={() => setShowAddBook(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 1l12 12M13 1L1 13" />
-                </svg>
-              </button>
-            </div>
-            {availableBooks.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-4xl mb-4">📚</p>
-                <p className="text-neutral-600 mb-4">
-                  No books in your library yet.
-                </p>
-                <Link
-                  href="/my-books"
-                  className="text-sm font-medium text-[#1f1a17] hover:underline"
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-5 border-b border-black/5">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-lg font-semibold text-[#1f1a17]">
+                  Add a book to your Top 10
+                </h2>
+                <button
+                  onClick={closeAddBookModal}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
                 >
-                  Add books first →
-                </Link>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 1l12 12M13 1L1 13" />
+                  </svg>
+                </button>
               </div>
-            ) : (
-              <div className="space-y-1">
-                {availableBooks
-                  .filter((book) => !topTen?.items.some((item) => item.book.id === book.id))
-                  .map((book) => (
-                    <button
-                      key={book.id}
-                      onClick={() => handleAddBook(book.id)}
-                      className="w-full flex items-center gap-5 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
-                    >
-                      {book.coverUrl ? (
-                        <img src={book.coverUrl} alt="" className="w-12 h-[72px] object-cover rounded-lg shadow-sm" />
-                      ) : (
-                        <div className="w-12 h-[72px] bg-neutral-100 rounded-lg flex items-center justify-center">
-                          <span className="text-xl">📕</span>
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-[#1f1a17]">
-                          {book.title}
-                        </p>
-                        {book.author && (
-                          <p className="text-sm text-neutral-500">{book.author}</p>
+              <p className="text-sm text-neutral-400">
+                Choose from your library, or add any book.
+              </p>
+
+              {/* Mode toggle */}
+              <div className="flex gap-1 mt-4">
+                <StatusPill
+                  variant="default"
+                  selected={addBookMode === 'library'}
+                  onClick={() => {
+                    setAddBookMode('library');
+                    setResolvedBook(null);
+                    setSearchError(null);
+                  }}
+                >
+                  From your library
+                </StatusPill>
+                <StatusPill
+                  variant="default"
+                  selected={addBookMode === 'search'}
+                  onClick={() => {
+                    setAddBookMode('search');
+                    setResolvedBook(null);
+                    setSearchError(null);
+                  }}
+                >
+                  Add any book
+                </StatusPill>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {addBookMode === 'library' ? (
+                /* Library mode */
+                <>
+                  {availableBooks.filter((book) => !topTen?.items.some((item) => item.book.id === book.id)).length === 0 ? (
+                    <div className="text-center py-10">
+                      <p className="text-4xl mb-4">📚</p>
+                      <p className="text-neutral-600 mb-4">
+                        {availableBooks.length === 0
+                          ? 'No books in your library yet.'
+                          : 'All your books are already in your Top 10!'}
+                      </p>
+                      <button
+                        onClick={() => setAddBookMode('search')}
+                        className="text-sm font-medium text-[#1f1a17] hover:underline"
+                      >
+                        Add any book instead →
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {availableBooks
+                        .filter((book) => !topTen?.items.some((item) => item.book.id === book.id))
+                        .map((book) => (
+                          <button
+                            key={book.id}
+                            onClick={() => handleAddBook(book.id)}
+                            className="w-full flex items-center gap-4 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
+                          >
+                            {book.coverUrl ? (
+                              <img src={book.coverUrl} alt="" className="w-10 h-[60px] object-cover rounded-lg shadow-sm" />
+                            ) : (
+                              <div className="w-10 h-[60px] bg-neutral-100 rounded-lg flex items-center justify-center">
+                                <span className="text-lg">📕</span>
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-[#1f1a17] truncate">
+                                {book.title}
+                              </p>
+                              {book.author && (
+                                <p className="text-sm text-neutral-500 truncate">{book.author}</p>
+                              )}
+                            </div>
+                            <span className="text-neutral-300 text-lg">+</span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Search mode */
+                <div className="space-y-4">
+                  {/* Search input */}
+                  <div>
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setResolvedBook(null);
+                        setSearchError(null);
+                      }}
+                      placeholder="Search by title or author"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <p className="text-xs text-neutral-400 mt-2">
+                      You can also paste a Goodreads link or ISBN.
+                    </p>
+                  </div>
+
+                  {/* Optional author field */}
+                  <div>
+                    <Input
+                      value={searchAuthor}
+                      onChange={(e) => setSearchAuthor(e.target.value)}
+                      placeholder="Author (optional, helps accuracy)"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                  </div>
+
+                  {/* Search button */}
+                  <Button
+                    onClick={handleSearch}
+                    loading={isSearching}
+                    disabled={!searchQuery.trim()}
+                    className="w-full"
+                  >
+                    {isSearching ? 'Searching...' : 'Find book'}
+                  </Button>
+
+                  {/* Error message */}
+                  {searchError && (
+                    <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                      <p className="text-sm text-red-600">{searchError}</p>
+                    </div>
+                  )}
+
+                  {/* Resolved book preview */}
+                  {resolvedBook && (
+                    <div className="p-4 bg-[#fdfcfa] rounded-xl border border-[#f0ebe3]">
+                      <div className="flex gap-4">
+                        {resolvedBook.coverUrl ? (
+                          <img
+                            src={resolvedBook.coverUrl}
+                            alt=""
+                            className="w-14 h-[84px] object-cover rounded-lg shadow-md"
+                          />
+                        ) : (
+                          <div className="w-14 h-[84px] bg-neutral-100 rounded-lg flex items-center justify-center">
+                            <span className="text-2xl">📕</span>
+                          </div>
                         )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[#1f1a17]">{resolvedBook.title}</p>
+                          {resolvedBook.author && (
+                            <p className="text-sm text-neutral-500">{resolvedBook.author}</p>
+                          )}
+                          <p className="text-xs text-neutral-400 mt-2">
+                            {resolvedBook.isNew ? 'New book added' : 'Found in database'}
+                            {resolvedBook.confidence === 'high' && ' · High confidence'}
+                          </p>
+                        </div>
                       </div>
-                    </button>
-                  ))}
-              </div>
-            )}
+                      <Button
+                        onClick={() => handleAddBook(resolvedBook.bookId)}
+                        className="w-full mt-4"
+                      >
+                        Add to Top 10
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Manual entry hint */}
+                  {!resolvedBook && !isSearching && !searchError && searchQuery && (
+                    <p className="text-xs text-neutral-400 text-center">
+                      Press Enter or click &ldquo;Find book&rdquo; to search
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
