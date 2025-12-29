@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { normalizeGoodreadsText } from '@/lib/text/normalize';
+import { normalizeGoodreadsUrl } from '@/lib/goodreads/url';
 import { FilterPillGroup } from '@/components/ui/status-pill';
 import { SignalAttribution, createSignal } from '@/components/ui/signal-attribution';
 
@@ -608,68 +609,20 @@ function AddSourceModal({
     sampleItems: Array<{ title: string; author: string | null }>;
   } | null>(null);
 
-  /**
-   * Convert a Goodreads page URL to RSS URL
-   * /review/list/66205797?shelf=read → /review/list_rss/66205797?shelf=read
-   * Preserves query params from the original URL
-   */
-  const convertGoodreadsUrl = (inputUrl: string): { url: string; converted: boolean } => {
-    try {
-      // Match patterns like goodreads.com/review/list/12345 (not list_rss)
-      const pagePattern = /goodreads\.com\/review\/list\/(\d+)/i;
-      const match = inputUrl.match(pagePattern);
-
-      if (match) {
-        const userId = match[1];
-
-        // Parse the original URL to preserve query params
-        let queryString = '';
-        try {
-          const urlObj = new URL(inputUrl);
-          queryString = urlObj.search; // includes the '?' if present
-        } catch {
-          // If URL parsing fails, try to extract query string manually
-          const queryIndex = inputUrl.indexOf('?');
-          if (queryIndex !== -1) {
-            queryString = inputUrl.substring(queryIndex);
-          }
-        }
-
-        // If no shelf param, default to shelf=read
-        if (!queryString.includes('shelf=')) {
-          queryString = queryString ? `${queryString}&shelf=read` : '?shelf=read';
-        }
-
-        // Build the RSS URL with preserved query params
-        const rssUrl = `https://www.goodreads.com/review/list_rss/${userId}${queryString}`;
-        return { url: rssUrl, converted: true };
-      }
-
-      // Check for user profile URL: /user/show/12345
-      const profilePattern = /goodreads\.com\/user\/show\/(\d+)/i;
-      const profileMatch = inputUrl.match(profilePattern);
-
-      if (profileMatch) {
-        const userId = profileMatch[1];
-        const rssUrl = `https://www.goodreads.com/review/list_rss/${userId}?shelf=read`;
-        return { url: rssUrl, converted: true };
-      }
-
-      // Already an RSS URL or different format
-      return { url: inputUrl, converted: false };
-    } catch {
-      return { url: inputUrl, converted: false };
-    }
-  };
-
   const handleUrlChange = (inputUrl: string) => {
     setPreviewData(null);
     setAddError(null);
 
     if (sourceType === 'person') {
-      const { url: convertedUrl, converted } = convertGoodreadsUrl(inputUrl);
-      setUrl(convertedUrl);
-      setUrlConverted(converted);
+      // Use centralized Goodreads URL normalization
+      const result = normalizeGoodreadsUrl(inputUrl);
+      setUrl(result.url);
+      setUrlConverted(result.converted);
+
+      // Show error if we couldn't parse a Goodreads URL
+      if (result.error && inputUrl.includes('goodreads')) {
+        setAddError(result.error);
+      }
     } else {
       setUrl(inputUrl);
       setUrlConverted(false);
@@ -837,13 +790,19 @@ function AddSourceModal({
                   type="url"
                   value={url}
                   onChange={(e) => handleUrlChange(e.target.value)}
-                  placeholder={sourceType === 'person' ? 'Goodreads URL or RSS feed' : 'RSS feed URL'}
+                  placeholder={sourceType === 'person' ? 'Paste any Goodreads profile or shelf URL' : 'RSS feed URL'}
                   className="w-full px-3 py-2.5 text-sm bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
                 />
                 {/* Show conversion message when URL was auto-converted */}
                 {urlConverted && (
                   <p className="mt-2 text-xs text-green-600">
-                    ✓ Converted to RSS feed URL
+                    ✓ Converted to RSS format. We&apos;ll follow their reads.
+                  </p>
+                )}
+                {/* Help text when no URL entered */}
+                {sourceType === 'person' && !url && !urlConverted && (
+                  <p className="mt-2 text-xs text-neutral-400">
+                    We&apos;ll automatically convert it to their RSS feed.
                   </p>
                 )}
               </div>
