@@ -32,7 +32,7 @@ interface AvailableBook {
   coverUrl: string | null;
 }
 
-type AddBookMode = 'library' | 'search';
+type AddBookMode = 'library' | 'search' | 'swap';
 
 interface ResolvedBook {
   bookId: string;
@@ -98,6 +98,8 @@ export default function Top10Page() {
   const [isSearching, setIsSearching] = useState(false);
   const [resolvedBook, setResolvedBook] = useState<ResolvedBook | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  // Swap mode state - when list is full, user picks which book to replace
+  const [bookToSwapIn, setBookToSwapIn] = useState<AvailableBook | ResolvedBook | null>(null);
 
   useEffect(() => {
     fetchTopTen();
@@ -160,14 +162,26 @@ export default function Top10Page() {
     fetchTopTen();
   };
 
-  const handleAddBook = async (bookId: string) => {
+  const handleAddBook = async (bookId: string, bookData?: AvailableBook | ResolvedBook) => {
     if (!topTen) return;
-    if (topTen.items.length >= 10) {
-      alert('Your Top 10 is full! Remove a book first.');
-      return;
-    }
+
+    // Check if already in Top 10
     if (topTen.items.some((item) => item.book.id === bookId)) {
       alert('This book is already in your Top 10!');
+      return;
+    }
+
+    // If list is full, enter swap mode
+    if (topTen.items.length >= 10) {
+      // Store the book we want to add
+      const book = bookData || availableBooks.find((b) => b.id === bookId) || resolvedBook;
+      if (book) {
+        setBookToSwapIn({
+          ...book,
+          id: 'bookId' in book ? book.bookId : book.id,
+        } as AvailableBook);
+        setAddBookMode('swap');
+      }
       return;
     }
 
@@ -185,6 +199,36 @@ export default function Top10Page() {
     fetchTopTen();
   };
 
+  // Handle swapping out an existing book for the new one
+  const handleSwap = async (bookIdToRemove: string) => {
+    if (!topTen || !bookToSwapIn) return;
+
+    const bookIdToAdd = 'bookId' in bookToSwapIn ? bookToSwapIn.bookId : bookToSwapIn.id;
+
+    // Replace the removed book with the new one, keeping the same rank
+    const removedItem = topTen.items.find((item) => item.book.id === bookIdToRemove);
+    if (!removedItem) return;
+
+    const newItems = topTen.items
+      .filter((item) => item.book.id !== bookIdToRemove)
+      .map((item) => ({ bookId: item.book.id, rank: item.rank }));
+
+    // Add the new book at the removed book's rank
+    newItems.push({ bookId: bookIdToAdd, rank: removedItem.rank });
+
+    // Re-sort by rank
+    newItems.sort((a, b) => a.rank - b.rank);
+
+    await fetch('/api/top10', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: newItems }),
+    });
+
+    closeAddBookModal();
+    fetchTopTen();
+  };
+
   const closeAddBookModal = () => {
     setShowAddBook(false);
     setAddBookMode('library');
@@ -192,6 +236,7 @@ export default function Top10Page() {
     setSearchAuthor('');
     setResolvedBook(null);
     setSearchError(null);
+    setBookToSwapIn(null);
   };
 
   const handleSearch = useCallback(async () => {
@@ -299,6 +344,10 @@ export default function Top10Page() {
 
         <p className="text-[17px] leading-relaxed text-neutral-500 max-w-lg mb-2">
           The books that made you who you are.
+        </p>
+
+        <p className="text-sm font-medium text-neutral-400 mb-2">
+          Ten books. Ranked. No ties.
         </p>
 
         <p className="text-sm text-neutral-400 italic mb-8">
@@ -544,7 +593,7 @@ export default function Top10Page() {
             <div className="p-5 border-b border-black/5">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-lg font-semibold text-[#1f1a17]">
-                  Add a book to your Top 10
+                  {addBookMode === 'swap' ? 'Replace a book' : 'Add a book to your Top 10'}
                 </h2>
                 <button
                   onClick={closeAddBookModal}
@@ -556,39 +605,126 @@ export default function Top10Page() {
                 </button>
               </div>
               <p className="text-sm text-neutral-400">
-                Choose from your library, or add any book.
+                {addBookMode === 'swap'
+                  ? 'Ten books. Ranked. No ties.'
+                  : 'Choose from your library, or add any book.'}
               </p>
 
-              {/* Mode toggle */}
-              <div className="flex gap-1 mt-4">
-                <StatusPill
-                  variant="default"
-                  selected={addBookMode === 'library'}
-                  onClick={() => {
-                    setAddBookMode('library');
-                    setResolvedBook(null);
-                    setSearchError(null);
-                  }}
-                >
-                  From your library
-                </StatusPill>
-                <StatusPill
-                  variant="default"
-                  selected={addBookMode === 'search'}
-                  onClick={() => {
-                    setAddBookMode('search');
-                    setResolvedBook(null);
-                    setSearchError(null);
-                  }}
-                >
-                  Add any book
-                </StatusPill>
-              </div>
+              {/* Mode toggle - hidden during swap mode */}
+              {addBookMode !== 'swap' && (
+                <div className="flex gap-1 mt-4">
+                  <StatusPill
+                    variant="default"
+                    selected={addBookMode === 'library'}
+                    onClick={() => {
+                      setAddBookMode('library');
+                      setResolvedBook(null);
+                      setSearchError(null);
+                    }}
+                  >
+                    From your library
+                  </StatusPill>
+                  <StatusPill
+                    variant="default"
+                    selected={addBookMode === 'search'}
+                    onClick={() => {
+                      setAddBookMode('search');
+                      setResolvedBook(null);
+                      setSearchError(null);
+                    }}
+                  >
+                    Add any book
+                  </StatusPill>
+                </div>
+              )}
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-5">
-              {addBookMode === 'library' ? (
+              {addBookMode === 'swap' && bookToSwapIn ? (
+                /* Swap mode - list is full, pick which to replace */
+                <div className="space-y-4">
+                  {/* Show the book being added */}
+                  <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-3">
+                      Adding to your Top 10
+                    </p>
+                    <div className="flex gap-3">
+                      {bookToSwapIn.coverUrl ? (
+                        <img
+                          src={bookToSwapIn.coverUrl}
+                          alt=""
+                          className="w-10 h-[60px] object-cover rounded-lg shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-10 h-[60px] bg-emerald-100 rounded-lg flex items-center justify-center">
+                          <span className="text-lg">📕</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-emerald-900">{bookToSwapIn.title}</p>
+                        {bookToSwapIn.author && (
+                          <p className="text-sm text-emerald-700">{bookToSwapIn.author}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prompt to pick book to remove */}
+                  <div>
+                    <p className="text-sm font-medium text-neutral-600 mb-1">
+                      Your Top 10 is full.
+                    </p>
+                    <p className="text-sm text-neutral-400">
+                      Which book should it replace?
+                    </p>
+                  </div>
+
+                  {/* Current Top 10 books to swap out */}
+                  <div className="space-y-1">
+                    {topTen?.items.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleSwap(item.book.id)}
+                        className="w-full flex items-center gap-4 p-3 text-left rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors group"
+                      >
+                        <span className="w-6 h-6 flex items-center justify-center text-sm font-medium text-neutral-400 group-hover:text-red-400">
+                          {item.rank}
+                        </span>
+                        {item.book.coverUrl ? (
+                          <img src={item.book.coverUrl} alt="" className="w-8 h-[48px] object-cover rounded shadow-sm" />
+                        ) : (
+                          <div className="w-8 h-[48px] bg-neutral-100 rounded flex items-center justify-center">
+                            <span className="text-sm">📕</span>
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-[#1f1a17] truncate group-hover:text-red-700">
+                            {item.book.title}
+                          </p>
+                          {item.book.author && (
+                            <p className="text-sm text-neutral-500 truncate group-hover:text-red-500">{item.book.author}</p>
+                          )}
+                        </div>
+                        <span className="text-neutral-300 group-hover:text-red-400 transition-colors">
+                          ↔
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Cancel */}
+                  <button
+                    onClick={() => {
+                      setAddBookMode('library');
+                      setBookToSwapIn(null);
+                    }}
+                    className="w-full text-sm text-neutral-400 hover:text-neutral-600 py-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : addBookMode === 'library' ? (
                 /* Library mode */
                 <>
                   {availableBooks.filter((book) => !topTen?.items.some((item) => item.book.id === book.id)).length === 0 ? (
@@ -613,7 +749,7 @@ export default function Top10Page() {
                         .map((book) => (
                           <button
                             key={book.id}
-                            onClick={() => handleAddBook(book.id)}
+                            onClick={() => handleAddBook(book.id, book)}
                             className="w-full flex items-center gap-4 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
                           >
                             {book.coverUrl ? (
@@ -711,7 +847,7 @@ export default function Top10Page() {
                         </div>
                       </div>
                       <Button
-                        onClick={() => handleAddBook(resolvedBook.bookId)}
+                        onClick={() => handleAddBook(resolvedBook.bookId, resolvedBook)}
                         className="w-full mt-4"
                       >
                         Add to Top 10
