@@ -1,6 +1,42 @@
 import Parser from 'rss-parser';
 import crypto from 'crypto';
 
+// User-Agent to avoid being blocked by Goodreads/other sites
+const USER_AGENT = 'GreatReads/1.0 (RSS Reader; +https://greatreads.app)';
+
+// Check if response body looks like RSS/Atom feed
+function isRSSContent(body: string): boolean {
+  const trimmed = body.trim().substring(0, 500).toLowerCase();
+  return (
+    trimmed.includes('<rss') ||
+    trimmed.includes('<feed') ||
+    trimmed.includes('<?xml') && (trimmed.includes('<rss') || trimmed.includes('<feed') || trimmed.includes('<channel'))
+  );
+}
+
+// Get a helpful error message based on response content
+function getResponseErrorMessage(body: string, url: string): string {
+  const trimmed = body.trim().substring(0, 1000).toLowerCase();
+
+  // HTML page returned (common when URL isn't RSS)
+  if (trimmed.includes('<!doctype html') || trimmed.includes('<html')) {
+    if (url.includes('goodreads.com')) {
+      if (url.includes('/review/list/') && !url.includes('/review/list_rss/')) {
+        return 'This is a Goodreads profile page, not an RSS feed. Try converting it to: goodreads.com/review/list_rss/[user_id]?shelf=read';
+      }
+      return 'Goodreads returned an HTML page instead of RSS. Make sure the URL includes "list_rss" and the shelf parameter (e.g., ?shelf=read)';
+    }
+    return 'This URL returned an HTML page, not an RSS feed. Check that the URL points directly to an RSS/Atom feed.';
+  }
+
+  // Empty response
+  if (!trimmed) {
+    return 'The URL returned an empty response';
+  }
+
+  return 'The URL did not return valid RSS/Atom content';
+}
+
 export interface RSSItem {
   title?: string;
   link?: string;
@@ -344,8 +380,10 @@ export async function fetchAndParseRSS(
   notModified: boolean;
 }> {
   try {
-    // Make request with conditional headers
-    const headers: Record<string, string> = {};
+    // Make request with conditional headers and User-Agent
+    const headers: Record<string, string> = {
+      'User-Agent': USER_AGENT,
+    };
     if (lastEtag) {
       headers['If-None-Match'] = lastEtag;
     }
@@ -373,6 +411,12 @@ export async function fetchAndParseRSS(
     }
 
     const xml = await response.text();
+
+    // Validate that this is actually RSS/Atom content
+    if (!isRSSContent(xml)) {
+      throw new Error(getResponseErrorMessage(xml, rssUrl));
+    }
+
     const feed = await parser.parseString(xml);
 
     // Extract response headers for caching
@@ -431,6 +475,9 @@ export async function testRSSFeed(
 }> {
   try {
     const response = await fetch(rssUrl, {
+      headers: {
+        'User-Agent': USER_AGENT,
+      },
       next: { revalidate: 0 },
     });
 
@@ -445,6 +492,18 @@ export async function testRSSFeed(
     }
 
     const xml = await response.text();
+
+    // Validate that this is actually RSS/Atom content
+    if (!isRSSContent(xml)) {
+      return {
+        success: false,
+        totalItems: 0,
+        fiveStarItems: 0,
+        sampleItems: [],
+        error: getResponseErrorMessage(xml, rssUrl),
+      };
+    }
+
     const feed = await parser.parseString(xml);
 
     const sampleItems = feed.items.slice(0, 5).map((item) => {

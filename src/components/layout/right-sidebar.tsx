@@ -610,7 +610,8 @@ function AddSourceModal({
 
   /**
    * Convert a Goodreads page URL to RSS URL
-   * /review/list/66205797 → /review/list_rss/66205797?shelf=read
+   * /review/list/66205797?shelf=read → /review/list_rss/66205797?shelf=read
+   * Preserves query params from the original URL
    */
   const convertGoodreadsUrl = (inputUrl: string): { url: string; converted: boolean } => {
     try {
@@ -620,7 +621,36 @@ function AddSourceModal({
 
       if (match) {
         const userId = match[1];
-        // Build the RSS URL
+
+        // Parse the original URL to preserve query params
+        let queryString = '';
+        try {
+          const urlObj = new URL(inputUrl);
+          queryString = urlObj.search; // includes the '?' if present
+        } catch {
+          // If URL parsing fails, try to extract query string manually
+          const queryIndex = inputUrl.indexOf('?');
+          if (queryIndex !== -1) {
+            queryString = inputUrl.substring(queryIndex);
+          }
+        }
+
+        // If no shelf param, default to shelf=read
+        if (!queryString.includes('shelf=')) {
+          queryString = queryString ? `${queryString}&shelf=read` : '?shelf=read';
+        }
+
+        // Build the RSS URL with preserved query params
+        const rssUrl = `https://www.goodreads.com/review/list_rss/${userId}${queryString}`;
+        return { url: rssUrl, converted: true };
+      }
+
+      // Check for user profile URL: /user/show/12345
+      const profilePattern = /goodreads\.com\/user\/show\/(\d+)/i;
+      const profileMatch = inputUrl.match(profilePattern);
+
+      if (profileMatch) {
+        const userId = profileMatch[1];
         const rssUrl = `https://www.goodreads.com/review/list_rss/${userId}?shelf=read`;
         return { url: rssUrl, converted: true };
       }
