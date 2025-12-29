@@ -6,6 +6,7 @@ import { normalizeGoodreadsText } from '@/lib/text/normalize';
 import { normalizeGoodreadsUrl } from '@/lib/goodreads/url';
 import { FilterPillGroup } from '@/components/ui/status-pill';
 import { SignalAttribution, createSignal } from '@/components/ui/signal-attribution';
+import { BookCover } from '@/components/ui/book-cover';
 
 type FilterType = 'new' | 'seen' | 'all';
 type SourceType = 'person' | 'feed';
@@ -72,8 +73,13 @@ const CONTEXTUAL_PAGES: Record<string, { title: string; description: string; tip
     description: 'Curating your Top 10 is a different kind of thinking.',
   },
   '/my-books': {
-    title: 'Your library',
-    description: 'Books you\'ve read, saved, or want to remember.',
+    title: 'Canon vs. five-star',
+    description: 'Five-star books are ones you loved. Canon books are the ones that stayed with you—they changed how you see things.',
+    tip: 'Promote books to your canon when they keep coming back to you.',
+  },
+  '/circle': {
+    title: 'Managing your circle',
+    description: 'Add, remove, or troubleshoot your trusted sources here.',
   },
 };
 
@@ -208,11 +214,14 @@ export function RightSidebar() {
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
-  // Derive state
-  const hasSources = sources.length > 0;
-  const activeSources = sources.filter(s => s.status === 'ACTIVE' || s.status === 'VALIDATING');
-  const failedSources = sources.filter(s => s.status === 'FAILED');
-  const backoffSources = sources.filter(s => s.status === 'BACKOFF');
+  // Derive state - sidebar only shows usable sources (active/warning)
+  // Errors are handled on the /circle management page
+  const usableSources = sources.filter(s =>
+    s.status === 'ACTIVE' || s.status === 'VALIDATING' || s.status === 'BACKOFF'
+  );
+  const hasSources = usableSources.length > 0;
+  const hasErrorSources = sources.some(s => s.status === 'FAILED');
+  const totalSources = sources.length;
 
   // Check if we're on a contextual page
   const contextualContent = CONTEXTUAL_PAGES[pathname];
@@ -255,13 +264,13 @@ export function RightSidebar() {
           <h2 className="text-sm font-medium text-[#1f1a17]">
             Incoming signals
           </h2>
-          {hasSources && (
-            <button
-              onClick={() => setShowManageSources(true)}
+          {totalSources > 0 && (
+            <a
+              href="/circle"
               className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               Manage
-            </button>
+            </a>
           )}
         </div>
         <p className="text-xs text-neutral-400">
@@ -321,6 +330,11 @@ export function RightSidebar() {
             <p className="text-xs text-neutral-400 leading-relaxed">
               {contextualContent.description}
             </p>
+            {contextualContent.tip && (
+              <p className="text-xs text-neutral-300 mt-3 italic">
+                {contextualContent.tip}
+              </p>
+            )}
           </div>
         ) : loading ? (
           /* Loading state - skeleton cards */
@@ -407,30 +421,16 @@ export function RightSidebar() {
               </p>
             )}
 
-            {/* Show any sources with issues */}
-            {(failedSources.length > 0 || backoffSources.length > 0) && (
-              <div className="space-y-2 mb-5">
-                {failedSources.map((source) => (
-                  <div key={source.id} className="p-3 bg-red-50 rounded-xl border border-red-100">
-                    <p className="text-xs font-medium text-red-700 mb-1">
-                      {source.title || 'Source'}
-                    </p>
-                    <p className="text-[10px] text-red-600">
-                      {getSourceStatusMessage(source)}
-                    </p>
-                  </div>
-                ))}
-                {backoffSources.map((source) => (
-                  <div key={source.id} className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                    <p className="text-xs font-medium text-amber-700 mb-1">
-                      {source.title || 'Source'}
-                    </p>
-                    <p className="text-[10px] text-amber-600">
-                      {getSourceStatusMessage(source)}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            {/* If there are sources with issues, show ONE line linking to /circle */}
+            {hasErrorSources && (
+              <a
+                href="/circle"
+                className="block p-3 bg-amber-50 rounded-xl border border-amber-100 mb-5 hover:bg-amber-100/50 transition-colors"
+              >
+                <p className="text-xs text-amber-700">
+                  Some sources need attention. <span className="underline">Manage your circle →</span>
+                </p>
+              </a>
             )}
 
             <button
@@ -450,19 +450,11 @@ export function RightSidebar() {
               >
                 <div className="flex gap-2 mb-2">
                   {/* Cover - smaller */}
-                  {item.coverImageUrl ? (
-                    <img
-                      src={item.coverImageUrl}
-                      alt=""
-                      className="w-10 h-[60px] object-cover rounded shadow-sm flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-10 h-[60px] bg-gradient-to-br from-stone-100 to-stone-200 rounded flex items-center justify-center flex-shrink-0">
-                      <span className="text-stone-400 text-[10px] font-medium">
-                        {item.title?.slice(0, 2).toUpperCase() || '📕'}
-                      </span>
-                    </div>
-                  )}
+                  <BookCover
+                    src={item.coverImageUrl}
+                    title={item.title || 'Untitled'}
+                    size="sm"
+                  />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
@@ -537,12 +529,12 @@ export function RightSidebar() {
           </button>
         ) : items.length > 0 ? (
           /* Active: see all link */
-          <button
-            onClick={() => setShowManageSources(true)}
-            className="w-full text-xs text-neutral-400 hover:text-neutral-600 transition-colors py-2"
+          <a
+            href="/circle"
+            className="block w-full text-xs text-neutral-400 hover:text-neutral-600 transition-colors py-2 text-center"
           >
             Manage sources
-          </button>
+          </a>
         ) : (
           /* Quiet: reassurance */
           <p className="text-xs text-neutral-300 text-center">

@@ -6,6 +6,7 @@ import { z } from 'zod';
 const updateSourceSchema = z.object({
   isActive: z.boolean().optional(),
   title: z.string().max(100).optional(),
+  status: z.enum(['ACTIVE', 'PAUSED']).optional(),
 });
 
 interface RouteParams {

@@ -5,6 +5,7 @@ import { Top10List } from '@/components/top10/top10-list';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { StatusPill } from '@/components/ui/status-pill';
+import { BookCover } from '@/components/ui/book-cover';
 import Link from 'next/link';
 
 interface TopTenItem {
@@ -489,10 +490,11 @@ export default function Top10Page() {
                   <span className="w-8 h-8 flex items-center justify-center text-lg text-neutral-400 flex-shrink-0">
                     {book.rank}
                   </span>
-                  <img
+                  <BookCover
                     src={book.coverUrl}
-                    alt=""
-                    className="w-12 h-[72px] object-cover rounded-lg shadow-sm flex-shrink-0"
+                    title={book.title}
+                    author={book.author}
+                    size="md"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-[#1f1a17] mb-0.5">{book.title}</p>
@@ -650,17 +652,12 @@ export default function Top10Page() {
                       Adding to your Top 10
                     </p>
                     <div className="flex gap-3">
-                      {bookToSwapIn.coverUrl ? (
-                        <img
-                          src={bookToSwapIn.coverUrl}
-                          alt=""
-                          className="w-10 h-[60px] object-cover rounded-lg shadow-sm"
-                        />
-                      ) : (
-                        <div className="w-10 h-[60px] bg-emerald-100 rounded-lg flex items-center justify-center">
-                          <span className="text-lg">📕</span>
-                        </div>
-                      )}
+                      <BookCover
+                        src={bookToSwapIn.coverUrl}
+                        title={bookToSwapIn.title}
+                        author={bookToSwapIn.author}
+                        size="sm"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-emerald-900">{bookToSwapIn.title}</p>
                         {bookToSwapIn.author && (
@@ -691,13 +688,12 @@ export default function Top10Page() {
                         <span className="w-6 h-6 flex items-center justify-center text-sm font-medium text-neutral-400 group-hover:text-red-400">
                           {item.rank}
                         </span>
-                        {item.book.coverUrl ? (
-                          <img src={item.book.coverUrl} alt="" className="w-8 h-[48px] object-cover rounded shadow-sm" />
-                        ) : (
-                          <div className="w-8 h-[48px] bg-neutral-100 rounded flex items-center justify-center">
-                            <span className="text-sm">📕</span>
-                          </div>
-                        )}
+                        <BookCover
+                          src={item.book.coverUrl}
+                          title={item.book.title}
+                          author={item.book.author}
+                          size="xs"
+                        />
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-[#1f1a17] truncate group-hover:text-red-700">
                             {item.book.title}
@@ -752,13 +748,12 @@ export default function Top10Page() {
                             onClick={() => handleAddBook(book.id, book)}
                             className="w-full flex items-center gap-4 p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors"
                           >
-                            {book.coverUrl ? (
-                              <img src={book.coverUrl} alt="" className="w-10 h-[60px] object-cover rounded-lg shadow-sm" />
-                            ) : (
-                              <div className="w-10 h-[60px] bg-neutral-100 rounded-lg flex items-center justify-center">
-                                <span className="text-lg">📕</span>
-                              </div>
-                            )}
+                            <BookCover
+                              src={book.coverUrl}
+                              title={book.title}
+                              author={book.author}
+                              size="sm"
+                            />
                             <div className="min-w-0 flex-1">
                               <p className="font-medium text-[#1f1a17] truncate">
                                 {book.title}
@@ -824,17 +819,13 @@ export default function Top10Page() {
                   {resolvedBook && (
                     <div className="p-4 bg-[#fdfcfa] rounded-xl border border-[#f0ebe3]">
                       <div className="flex gap-4">
-                        {resolvedBook.coverUrl ? (
-                          <img
-                            src={resolvedBook.coverUrl}
-                            alt=""
-                            className="w-14 h-[84px] object-cover rounded-lg shadow-md"
-                          />
-                        ) : (
-                          <div className="w-14 h-[84px] bg-neutral-100 rounded-lg flex items-center justify-center">
-                            <span className="text-2xl">📕</span>
-                          </div>
-                        )}
+                        <BookCover
+                          src={resolvedBook.coverUrl}
+                          title={resolvedBook.title}
+                          author={resolvedBook.author}
+                          size="lg"
+                          className="shadow-md"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-[#1f1a17]">{resolvedBook.title}</p>
                           {resolvedBook.author && (

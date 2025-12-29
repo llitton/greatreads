@@ -1,40 +1,96 @@
 'use client';
 
+import { useState } from 'react';
+
 interface BookCoverProps {
   src?: string | null;
   title: string;
-  size?: 'sm' | 'md' | 'lg';
+  author?: string | null;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
+/**
+ * Size presets (width x height in ~2:3 aspect ratio for book covers)
+ */
 const sizeClasses = {
-  sm: 'w-12 h-[72px]',
-  md: 'w-14 h-20',
-  lg: 'w-20 h-28',
+  xs: { wrapper: 'w-8 h-12', text: 'text-[8px]' },
+  sm: { wrapper: 'w-10 h-[60px]', text: 'text-[10px]' },
+  md: { wrapper: 'w-12 h-[72px]', text: 'text-xs' },
+  lg: { wrapper: 'w-14 h-[84px]', text: 'text-xs' },
+  xl: { wrapper: 'w-20 h-[120px]', text: 'text-sm' },
 };
 
 /**
- * Consistent book cover with fallback
- * Shows initials from title when no cover URL is available
+ * Generate initials from title for placeholder
  */
-export function BookCover({ src, title, size = 'md', className = '' }: BookCoverProps) {
-  const sizeClass = sizeClasses[size];
+function getInitials(title: string): string {
+  const words = title.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return title.substring(0, 2).toUpperCase() || '?';
+}
 
-  // Get initials from first two words of title
-  const initials = title
-    .split(' ')
-    .slice(0, 2)
-    .map(word => word.charAt(0))
-    .join('')
-    .toUpperCase();
+/**
+ * Generate a consistent color based on title
+ */
+function getPlaceholderColor(title: string): string {
+  const colors = [
+    'from-amber-100 to-amber-200 text-amber-700',
+    'from-emerald-100 to-emerald-200 text-emerald-700',
+    'from-sky-100 to-sky-200 text-sky-700',
+    'from-violet-100 to-violet-200 text-violet-700',
+    'from-rose-100 to-rose-200 text-rose-700',
+    'from-orange-100 to-orange-200 text-orange-700',
+    'from-teal-100 to-teal-200 text-teal-700',
+    'from-stone-100 to-stone-200 text-stone-600',
+  ];
 
-  if (!src) {
+  // Simple hash based on title
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = ((hash << 5) - hash) + title.charCodeAt(i);
+    hash = hash & hash;
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/**
+ * BookCover Component
+ *
+ * A resilient book cover image that:
+ * 1. Shows a styled placeholder when src is missing/null
+ * 2. Falls back to placeholder on load error (503, 404, etc.)
+ * 3. Never shows the broken image icon
+ *
+ * Archive.org and other cover CDNs are unreliable - this component
+ * ensures the UI always looks good regardless of external failures.
+ */
+export function BookCover({
+  src,
+  title,
+  author,
+  size = 'md',
+  className = '',
+}: BookCoverProps) {
+  const [hasError, setHasError] = useState(false);
+
+  const sizeClass = sizeClasses[size] || sizeClasses.md;
+  const showPlaceholder = !src || hasError;
+
+  const initials = getInitials(title);
+  const colorClass = getPlaceholderColor(title);
+
+  if (showPlaceholder) {
     return (
       <div
-        className={`${sizeClass} rounded-lg bg-gradient-to-br from-stone-100 to-stone-200 flex items-center justify-center flex-shrink-0 shadow-sm ${className}`}
+        className={`${sizeClass.wrapper} rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center flex-shrink-0 shadow-sm ${className}`}
+        title={title}
       >
-        <span className="text-stone-500 text-xs font-medium tracking-wide">
-          {initials || '📕'}
+        <span className={`font-medium tracking-wide ${sizeClass.text}`}>
+          {initials}
         </span>
       </div>
     );
@@ -44,65 +100,16 @@ export function BookCover({ src, title, size = 'md', className = '' }: BookCover
     <img
       src={src}
       alt={`Cover of ${title}`}
-      className={`${sizeClass} object-cover rounded-lg shadow-sm flex-shrink-0 ${className}`}
-      onError={(e) => {
-        // On error, replace with fallback
-        const target = e.target as HTMLImageElement;
-        target.style.display = 'none';
-        const fallback = target.nextElementSibling;
-        if (fallback) {
-          fallback.classList.remove('hidden');
-        }
-      }}
+      className={`${sizeClass.wrapper} object-cover rounded-lg shadow-sm flex-shrink-0 ${className}`}
+      onError={() => setHasError(true)}
+      loading="lazy"
     />
   );
 }
 
 /**
- * Book cover with hidden fallback that appears on image load error
- * Use this when you need the fallback to be a sibling element
+ * BookCoverWithFallback - same behavior, different name for backwards compatibility
  */
-export function BookCoverWithFallback({ src, title, size = 'md', className = '' }: BookCoverProps) {
-  const sizeClass = sizeClasses[size];
-
-  const initials = title
-    .split(' ')
-    .slice(0, 2)
-    .map(word => word.charAt(0))
-    .join('')
-    .toUpperCase();
-
-  return (
-    <div className={`${sizeClass} flex-shrink-0 ${className}`}>
-      {src ? (
-        <>
-          <img
-            src={src}
-            alt={`Cover of ${title}`}
-            className={`${sizeClass} object-cover rounded-lg shadow-sm`}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-          <div
-            className={`hidden ${sizeClass} rounded-lg bg-gradient-to-br from-stone-100 to-stone-200 flex items-center justify-center shadow-sm`}
-          >
-            <span className="text-stone-500 text-xs font-medium tracking-wide">
-              {initials || '📕'}
-            </span>
-          </div>
-        </>
-      ) : (
-        <div
-          className={`${sizeClass} rounded-lg bg-gradient-to-br from-stone-100 to-stone-200 flex items-center justify-center shadow-sm`}
-        >
-          <span className="text-stone-500 text-xs font-medium tracking-wide">
-            {initials || '📕'}
-          </span>
-        </div>
-      )}
-    </div>
-  );
+export function BookCoverWithFallback(props: BookCoverProps) {
+  return <BookCover {...props} />;
 }

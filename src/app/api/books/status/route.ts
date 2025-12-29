@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     where: { userId: session.user.id },
     include: {
       book: true,
+      canonEntry: true,
     },
     orderBy: { updatedAt: 'desc' },
   });

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { BookCover } from '@/components/ui/book-cover';
 import { normalizeGoodreadsText } from '@/lib/text/normalize';
 
 interface ReflectionBook {
@@ -202,17 +203,13 @@ export default function StayedPage() {
                         {/* Book info - minimal */}
                         <div className="flex gap-5">
                           {/* Cover - quiet presence */}
-                          {item.book.coverUrl ? (
-                            <img
-                              src={item.book.coverUrl}
-                              alt=""
-                              className="w-12 h-[72px] object-cover rounded opacity-90 flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-12 h-[72px] bg-neutral-50 rounded flex items-center justify-center flex-shrink-0">
-                              <span className="text-neutral-300 text-xs">◇</span>
-                            </div>
-                          )}
+                          <BookCover
+                            src={item.book.coverUrl}
+                            title={item.book.title}
+                            author={item.book.author}
+                            size="md"
+                            className="opacity-90"
+                          />
 
                           {/* Content */}
                           <div className="flex-1 min-w-0 pt-1">

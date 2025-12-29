@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { BookCover } from '@/components/ui/book-cover';
 
 interface TopTenBook {
   id: string;
@@ -65,21 +66,13 @@ function SortableItem({ item, onRemove, isTopTier }: SortableItemProps) {
       </span>
 
       {/* Book cover - larger for top 3 */}
-      {item.book.coverUrl ? (
-        <img
-          src={item.book.coverUrl}
-          alt=""
-          className={`object-cover rounded-lg shadow-md flex-shrink-0 ${
-            isTopTier ? 'w-16 h-24' : 'w-14 h-20'
-          }`}
-        />
-      ) : (
-        <div className={`bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ${
-          isTopTier ? 'w-16 h-24' : 'w-14 h-20'
-        }`}>
-          <span className={isTopTier ? 'text-3xl' : 'text-2xl'}>📕</span>
-        </div>
-      )}
+      <BookCover
+        src={item.book.coverUrl}
+        title={item.book.title}
+        author={item.book.author}
+        size={isTopTier ? 'xl' : 'lg'}
+        className="shadow-md"
+      />
 
       {/* Book info */}
       <div className="flex-1 min-w-0">

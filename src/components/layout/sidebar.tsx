@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 // Discovery section
 const discoveryItems = [
   { href: '/feed', label: 'Signals', icon: '✦' },
+  { href: '/circle', label: 'Your Circle', icon: '👥' },
   { href: '/my-books', label: 'My Books', icon: '📚' },
 ];
 
