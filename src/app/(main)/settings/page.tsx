@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { SignalAttribution, createSignal } from '@/components/ui/signal-attribution';
+import { TrustedSourcesSummary } from '@/components/settings/trusted-sources-summary';
 
 interface UserSettings {
   id: string;
@@ -44,6 +45,7 @@ function Toggle({
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -161,7 +163,7 @@ export default function SettingsPage() {
 
       <div className="space-y-16">
         {/* ═══════════════════════════════════════════════════════════════════
-            PERSPECTIVE - Identity as declarations, not inputs
+            PERSPECTIVE - Who's browsing and who they trust
         ═══════════════════════════════════════════════════════════════════ */}
         <section>
           <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-8">
@@ -169,9 +171,9 @@ export default function SettingsPage() {
           </h2>
 
           <div className="space-y-8">
-            {/* Who uses this app - declarative first */}
+            {/* Browsing as */}
             <div>
-              <p className="text-xs text-neutral-400 mb-2">This library is for</p>
+              <p className="text-xs text-neutral-400 mb-2">Browsing as</p>
               {!editingName ? (
                 <div className="flex items-center justify-between">
                   <div>
@@ -179,7 +181,7 @@ export default function SettingsPage() {
                       {name || 'Mark'}
                     </p>
                     <p className="text-sm text-neutral-400">
-                      The person browsing and discovering.
+                      The person discovering and curating.
                     </p>
                   </div>
                   <button
@@ -223,28 +225,13 @@ export default function SettingsPage() {
             {/* Separator */}
             <div className="h-px bg-neutral-100" />
 
-            {/* Signal attribution preview */}
+            {/* Trusted sources */}
             <div>
-              <p className="text-xs text-neutral-400 mb-2">When you rate 5 stars</p>
-              <div>
-                <p className="text-lg font-medium text-[#1f1a17]">
-                  Laura
-                </p>
-                <p className="text-sm text-neutral-400">
-                  Appears as{' '}
-                  <SignalAttribution
-                    signal={createSignal({
-                      type: 'five_star',
-                      sourcePersonId: 'laura',
-                      sourcePersonName: 'Laura',
-                      sourceKind: 'person',
-                    })}
-                    variant="inline"
-                    showStars={true}
-                    className="text-amber-600"
-                  />
-                </p>
-              </div>
+              <p className="text-xs text-neutral-400 mb-2">Recommendations come from</p>
+              <TrustedSourcesSummary
+                showExpanded={true}
+                onManage={() => router.push('/feed')}
+              />
             </div>
           </div>
         </section>
@@ -257,6 +244,10 @@ export default function SettingsPage() {
             How you want to be interrupted
           </h2>
 
+          <p className="text-sm text-neutral-500 mb-5">
+            When someone you trust rates a book 5 stars, you&apos;ll see it in {name || 'Mark'}&apos;s feed.
+          </p>
+
           <div className="space-y-5">
             {/* Five-star notifications */}
             <div className="p-5 bg-[#fdfcfa] rounded-2xl border border-[#f0ebe3]">
@@ -266,7 +257,7 @@ export default function SettingsPage() {
                     Five-star notifications
                   </p>
                   <p className="text-sm text-neutral-500 leading-relaxed">
-                    I want to know when someone I trust truly loved something.
+                    Get notified when your trusted sources truly love something.
                   </p>
                 </div>
                 <Toggle
