@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Top10List } from '@/components/top10/top10-list';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,12 +80,16 @@ const slotPrompts: Record<number, string> = {
 };
 
 export default function Top10Page() {
+  const searchParams = useSearchParams();
   const [topTen, setTopTen] = useState<TopTen | null>(null);
   const [loading, setLoading] = useState(true);
   const [availableBooks, setAvailableBooks] = useState<AvailableBook[]>([]);
   const [showAddBook, setShowAddBook] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requests, setRequests] = useState<Array<{ id: string; toEmail: string; status: string; createdAt: string }>>([]);
+
+  // Revisit mode - when user comes from My Books with canon full
+  const [revisitMode, setRevisitMode] = useState(false);
 
   // Request form state
   const [requestEmail, setRequestEmail] = useState('');
@@ -101,6 +106,13 @@ export default function Top10Page() {
   const [searchError, setSearchError] = useState<string | null>(null);
   // Swap mode state - when list is full, user picks which book to replace
   const [bookToSwapIn, setBookToSwapIn] = useState<AvailableBook | ResolvedBook | null>(null);
+
+  // Check for revisit mode from URL params
+  useEffect(() => {
+    if (searchParams.get('mode') === 'revisit') {
+      setRevisitMode(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchTopTen();
@@ -333,6 +345,30 @@ export default function Top10Page() {
 
   return (
     <div className="max-w-3xl mx-auto px-5 py-8">
+      {/* Revisit mode banner */}
+      {revisitMode && topTen && topTen.items.length >= 10 && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-medium text-amber-800 mb-1">
+                Your canon is full
+              </p>
+              <p className="text-sm text-amber-700">
+                To add a new book, you&apos;ll need to remove one. Which book no longer belongs?
+              </p>
+            </div>
+            <button
+              onClick={() => setRevisitMode(false)}
+              className="text-amber-400 hover:text-amber-600 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M2 2l12 12M14 2L2 14" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header - identity, not data entry */}
       <header className="mb-8">
         <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-5">

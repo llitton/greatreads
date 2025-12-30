@@ -306,14 +306,18 @@ model CanonEntry {
   userBookId     String    @unique
   userBook       UserBookStatus @relation(fields: [userBookId], references: [id], onDelete: Cascade)
 
+  // Required: You cannot add to canon without a reflection
+  reflectionId   String    @unique
+  reflection     Reflection @relation(fields: [reflectionId], references: [id])
+
   position       Int       // Ordering/ranking in canon (1-based)
-  reflectionNote String?   @db.Text  // "Why did this one stay with you?"
 
   addedAt        DateTime  @default(now())
   removedAt      DateTime? // null = active canon entry
 
   @@index([userBookId])
   @@index([addedAt])
+  @@index([reflectionId])
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -348,17 +352,33 @@ model Reflection {
   userBook     UserBookStatus @relation(fields: [userBookId], references: [id], onDelete: Cascade)
 
   content      String    @db.Text
+  kind         ReflectionKind @default(NOTE)  // How this reflection was created
   visibility   String    @default("PRIVATE")  // PRIVATE only for now
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  // Inverse relation for canon entries that reference this reflection
+  canonEntry   CanonEntry?
+
   @@index([userBookId])
   @@index([updatedAt])
+  @@index([kind])
 }
 
 enum StayedSource {
   SYSTEM  // Added via signal threshold
   USER    // Explicitly added by user
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ReflectionKind: How the reflection was created
+// Used for canon-ready scoring - prompted reflections count more
+// ═══════════════════════════════════════════════════════════════════
+
+enum ReflectionKind {
+  NOTE     // Free-form note the user wrote
+  PROMPT   // Response to a prompt ("Why did this one stay with you?")
+  REVISIT  // Written during canon revisit flow
 }
 
 model StayedEntry {

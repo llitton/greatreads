@@ -1,18 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import {
+  getCanon,
+  addToCanon,
+  removeFromCanon,
+  reorderCanon,
+} from '@/lib/canon';
+import { ReflectionKind } from '@prisma/client';
 
 const addToCanonSchema = z.object({
   userBookId: z.string().min(1),
-  reflectionNote: z.string().max(500).optional(),
+  reflectionContent: z.string().min(1, 'Reflection is required'),
+  reflectionKind: z.nativeEnum(ReflectionKind).optional(),
 });
 
 const removeFromCanonSchema = z.object({
   canonEntryId: z.string().min(1),
 });
 
-// GET user's canon entries
+const reorderSchema = z.object({
+  orderedEntryIds: z.array(z.string().min(1)),
+});
+
+/**
+ * GET /api/canon
+ *
+ * Get user's canon entries (active only)
+ */
 export async function GET() {
   const session = await auth();
 
@@ -20,27 +35,24 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const canonEntries = await prisma.canonEntry.findMany({
-    where: {
-      userBook: {
-        userId: session.user.id,
-      },
-      removedAt: null, // Only active entries
-    },
-    include: {
-      userBook: {
-        include: {
-          book: true,
-        },
-      },
-    },
-    orderBy: { position: 'asc' },
-  });
-
-  return NextResponse.json(canonEntries);
+  try {
+    const canon = await getCanon(session.user.id);
+    return NextResponse.json({ canon, count: canon.length });
+  } catch (error) {
+    console.error('[Canon API] GET error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch canon' },
+      { status: 500 }
+    );
+  }
 }
 
-// POST add to canon
+/**
+ * POST /api/canon
+ *
+ * Add a book to canon. Requires a reflection.
+ * Body: { userBookId, reflectionContent, reflectionKind? }
+ */
 export async function POST(request: NextRequest) {
   const session = await auth();
 
@@ -50,65 +62,24 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { userBookId, reflectionNote } = addToCanonSchema.parse(body);
+    const { userBookId, reflectionContent, reflectionKind } =
+      addToCanonSchema.parse(body);
 
-    // Verify the userBook belongs to this user
-    const userBook = await prisma.userBookStatus.findUnique({
-      where: { id: userBookId },
-    });
+    const result = await addToCanon(
+      session.user.id,
+      userBookId,
+      reflectionContent,
+      reflectionKind ?? ReflectionKind.PROMPT
+    );
 
-    if (!userBook || userBook.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Book not found' }, { status: 404 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    // Check if already in canon
-    const existing = await prisma.canonEntry.findUnique({
-      where: { userBookId },
+    return NextResponse.json({
+      success: true,
+      canonEntryId: result.canonEntryId,
     });
-
-    if (existing && !existing.removedAt) {
-      return NextResponse.json({ error: 'Already in canon' }, { status: 400 });
-    }
-
-    // Get next position
-    const lastEntry = await prisma.canonEntry.findFirst({
-      where: {
-        userBook: { userId: session.user.id },
-        removedAt: null,
-      },
-      orderBy: { position: 'desc' },
-    });
-    const nextPosition = (lastEntry?.position ?? 0) + 1;
-
-    // If entry exists but was removed, reactivate it
-    if (existing) {
-      const result = await prisma.canonEntry.update({
-        where: { id: existing.id },
-        data: {
-          removedAt: null,
-          position: nextPosition,
-          reflectionNote: reflectionNote ?? existing.reflectionNote,
-        },
-        include: {
-          userBook: { include: { book: true } },
-        },
-      });
-      return NextResponse.json(result);
-    }
-
-    // Create new canon entry
-    const result = await prisma.canonEntry.create({
-      data: {
-        userBookId,
-        position: nextPosition,
-        reflectionNote,
-      },
-      include: {
-        userBook: { include: { book: true } },
-      },
-    });
-
-    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -117,7 +88,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Failed to add to canon:', error);
+    console.error('[Canon API] POST error:', error);
     return NextResponse.json(
       { error: 'Failed to add to canon' },
       { status: 500 }
@@ -125,7 +96,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE remove from canon (soft delete)
+/**
+ * DELETE /api/canon
+ *
+ * Remove a book from canon (soft delete)
+ * Body: { canonEntryId }
+ */
 export async function DELETE(request: NextRequest) {
   const session = await auth();
 
@@ -137,21 +113,11 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const { canonEntryId } = removeFromCanonSchema.parse(body);
 
-    // Verify ownership
-    const entry = await prisma.canonEntry.findUnique({
-      where: { id: canonEntryId },
-      include: { userBook: true },
-    });
+    const result = await removeFromCanon(session.user.id, canonEntryId);
 
-    if (!entry || entry.userBook.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
-
-    // Soft delete
-    await prisma.canonEntry.update({
-      where: { id: canonEntryId },
-      data: { removedAt: new Date() },
-    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -162,7 +128,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.error('Failed to remove from canon:', error);
+    console.error('[Canon API] DELETE error:', error);
     return NextResponse.json(
       { error: 'Failed to remove from canon' },
       { status: 500 }
@@ -170,7 +136,12 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH update reflection note
+/**
+ * PATCH /api/canon
+ *
+ * Reorder canon entries
+ * Body: { orderedEntryIds: string[] }
+ */
 export async function PATCH(request: NextRequest) {
   const session = await auth();
 
@@ -180,30 +151,15 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { canonEntryId, reflectionNote } = z
-      .object({
-        canonEntryId: z.string().min(1),
-        reflectionNote: z.string().max(500).nullable(),
-      })
-      .parse(body);
+    const { orderedEntryIds } = reorderSchema.parse(body);
 
-    // Verify ownership
-    const entry = await prisma.canonEntry.findUnique({
-      where: { id: canonEntryId },
-      include: { userBook: true },
-    });
+    const result = await reorderCanon(session.user.id, orderedEntryIds);
 
-    if (!entry || entry.userBook.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const result = await prisma.canonEntry.update({
-      where: { id: canonEntryId },
-      data: { reflectionNote },
-      include: { userBook: { include: { book: true } } },
-    });
-
-    return NextResponse.json(result);
+    return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -212,10 +168,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    console.error('Failed to update canon entry:', error);
-    return NextResponse.json(
-      { error: 'Failed to update' },
-      { status: 500 }
-    );
+    console.error('[Canon API] PATCH error:', error);
+    return NextResponse.json({ error: 'Failed to reorder canon' }, { status: 500 });
   }
 }
