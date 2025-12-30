@@ -68,6 +68,11 @@ const CONTEXTUAL_PAGES: Record<string, { title: string; description: string; tip
     title: 'Books that stayed',
     description: 'This page is for quiet reflection. Signals will wait.',
   },
+  '/stayed': {
+    title: 'Books that stayed',
+    description: 'This page is for quiet reflection. Signals will wait.',
+    tip: 'Some books linger. Others return when you least expect them.',
+  },
   '/top10': {
     title: 'Your personal canon',
     description: 'Curating your Top 10 is a different kind of thinking.',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { BookCover } from '@/components/ui/book-cover';
 import Link from 'next/link';
@@ -35,6 +35,13 @@ interface UserBookStatus {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Constants
+// ═══════════════════════════════════════════════════════════════════
+
+const CANON_MAX_SIZE = 10;
+const INLINE_FOLLOWUP_DURATION_MS = 8000;
+
+// ═══════════════════════════════════════════════════════════════════
 // Empty State Definitions
 // ═══════════════════════════════════════════════════════════════════
 
@@ -60,16 +67,23 @@ export default function MyBooksPage() {
   const [loading, setLoading] = useState(true);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
-  // Canon promotion modal state
+  // Modal states
   const [promotingBook, setPromotingBook] = useState<UserBookStatus | null>(null);
-  const [reflectionNote, setReflectionNote] = useState('');
+  const [removingCanon, setRemovingCanon] = useState<{book: UserBookStatus; canonId: string} | null>(null);
+  const [canonFullBook, setCanonFullBook] = useState<UserBookStatus | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Canon removal confirmation
-  const [removingCanon, setRemovingCanon] = useState<{book: UserBookStatus; canonId: string} | null>(null);
+  // Inline follow-up state (after successful promotion)
+  const [followUpBookId, setFollowUpBookId] = useState<string | null>(null);
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const followUpTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchBooks();
+    return () => {
+      if (followUpTimer.current) clearTimeout(followUpTimer.current);
+    };
   }, []);
 
   const fetchBooks = async () => {
@@ -85,25 +99,22 @@ export default function MyBooksPage() {
   };
 
   // Separate books into categories
-  const { canonBooks, fiveStarBooks, otherBooks } = useMemo(() => {
+  const { canonBooks, fiveStarBooks } = useMemo(() => {
     const canon: UserBookStatus[] = [];
     const fiveStars: UserBookStatus[] = [];
-    const others: UserBookStatus[] = [];
 
     books.forEach((book) => {
       if (book.canonEntry && !book.canonEntry.removedAt) {
         canon.push(book);
       } else if (book.userRating === 5 || book.status === 'READ') {
         fiveStars.push(book);
-      } else {
-        others.push(book);
       }
     });
 
     // Sort canon by position
     canon.sort((a, b) => (a.canonEntry?.position ?? 0) - (b.canonEntry?.position ?? 0));
 
-    return { canonBooks: canon, fiveStarBooks: fiveStars, otherBooks: others };
+    return { canonBooks: canon, fiveStarBooks: fiveStars };
   }, [books]);
 
   // Determine empty state type
@@ -117,27 +128,86 @@ export default function MyBooksPage() {
   // Actions
   // ─────────────────────────────────────────────────────────────────
 
-  const handlePromoteToCanon = async () => {
+  const handlePromoteClick = (book: UserBookStatus) => {
+    // Check if canon is full
+    if (canonBooks.length >= CANON_MAX_SIZE) {
+      setCanonFullBook(book);
+    } else {
+      setPromotingBook(book);
+    }
+  };
+
+  const handleConfirmPromotion = async () => {
     if (!promotingBook) return;
     setIsSubmitting(true);
 
     try {
-      await fetch('/api/canon', {
+      const res = await fetch('/api/canon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userBookId: promotingBook.id,
-          reflectionNote: reflectionNote || undefined,
         }),
       });
-      await fetchBooks();
-      setPromotingBook(null);
-      setReflectionNote('');
+
+      if (res.ok) {
+        // Optimistic UI: immediately update state
+        const bookId = promotingBook.id;
+        setPromotingBook(null);
+        await fetchBooks();
+
+        // Show inline follow-up
+        setFollowUpBookId(bookId);
+        setShowNoteInput(false);
+        setNoteText('');
+
+        // Auto-dismiss after 8 seconds
+        if (followUpTimer.current) clearTimeout(followUpTimer.current);
+        followUpTimer.current = setTimeout(() => {
+          setFollowUpBookId(null);
+        }, INLINE_FOLLOWUP_DURATION_MS);
+      }
     } catch (error) {
       console.error('Failed to add to canon:', error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSaveNote = async () => {
+    if (!followUpBookId || !noteText.trim()) return;
+    setIsSubmitting(true);
+
+    try {
+      // Find the canon entry for this book
+      const book = books.find(b => b.id === followUpBookId);
+      if (!book?.canonEntry?.id) return;
+
+      await fetch('/api/canon', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          canonEntryId: book.canonEntry.id,
+          reflectionNote: noteText.trim(),
+        }),
+      });
+
+      await fetchBooks();
+      setFollowUpBookId(null);
+      setShowNoteInput(false);
+      setNoteText('');
+    } catch (error) {
+      console.error('Failed to save note:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDismissFollowUp = () => {
+    if (followUpTimer.current) clearTimeout(followUpTimer.current);
+    setFollowUpBookId(null);
+    setShowNoteInput(false);
+    setNoteText('');
   };
 
   const handleRemoveFromCanon = async () => {
@@ -223,26 +293,40 @@ export default function MyBooksPage() {
               Your Canon
             </h2>
             <span className="text-xs text-neutral-300">
-              {canonBooks.length} book{canonBooks.length !== 1 ? 's' : ''}
+              {canonBooks.length}/{CANON_MAX_SIZE}
             </span>
           </div>
           <p className="text-xs text-neutral-400 mb-6">
-            Books that changed how you see things.
+            Books that shaped how you think.
           </p>
 
           <div className="space-y-4">
             {canonBooks.map((item, index) => (
-              <CanonBookCard
-                key={item.id}
-                item={item}
-                position={index + 1}
-                expanded={expandedNotes.has(item.id)}
-                onToggleNotes={() => toggleNotes(item.id)}
-                onRemove={() => setRemovingCanon({
-                  book: item,
-                  canonId: item.canonEntry!.id
-                })}
-              />
+              <div key={item.id}>
+                <CanonBookCard
+                  item={item}
+                  position={index + 1}
+                  expanded={expandedNotes.has(item.id)}
+                  onToggleNotes={() => toggleNotes(item.id)}
+                  onRemove={() => setRemovingCanon({
+                    book: item,
+                    canonId: item.canonEntry!.id
+                  })}
+                />
+
+                {/* Inline follow-up after promotion */}
+                {followUpBookId === item.id && (
+                  <InlineFollowUp
+                    showNoteInput={showNoteInput}
+                    noteText={noteText}
+                    onNoteChange={setNoteText}
+                    onAddNote={() => setShowNoteInput(true)}
+                    onSaveNote={handleSaveNote}
+                    onDismiss={handleDismissFollowUp}
+                    isSubmitting={isSubmitting}
+                  />
+                )}
+              </div>
             ))}
           </div>
         </section>
@@ -277,7 +361,7 @@ export default function MyBooksPage() {
                 item={item}
                 expanded={expandedNotes.has(item.id)}
                 onToggleNotes={() => toggleNotes(item.id)}
-                onPromote={() => setPromotingBook(item)}
+                onPromote={() => handlePromoteClick(item)}
               />
             ))}
           </div>
@@ -295,10 +379,10 @@ export default function MyBooksPage() {
       {(canonBooks.length > 0 || fiveStarBooks.length > 0) && (
         <footer className="mt-16 pt-8 border-t border-black/5 text-center space-y-4">
           <Link
-            href="/reflections"
+            href="/stayed"
             className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors block"
           >
-            See your reflections
+            See books that stayed
           </Link>
           <Link
             href="/import"
@@ -317,14 +401,21 @@ export default function MyBooksPage() {
       {promotingBook && (
         <PromoteToCanonModal
           book={promotingBook}
-          reflectionNote={reflectionNote}
-          onNoteChange={setReflectionNote}
-          onConfirm={handlePromoteToCanon}
-          onCancel={() => {
-            setPromotingBook(null);
-            setReflectionNote('');
-          }}
+          onConfirm={handleConfirmPromotion}
+          onCancel={() => setPromotingBook(null)}
           isSubmitting={isSubmitting}
+        />
+      )}
+
+      {/* Canon Full Modal */}
+      {canonFullBook && (
+        <CanonFullModal
+          book={canonFullBook}
+          onReviewCanon={() => {
+            setCanonFullBook(null);
+            window.location.href = '/top10?mode=revisit';
+          }}
+          onCancel={() => setCanonFullBook(null)}
         />
       )}
 
@@ -377,8 +468,7 @@ function NoCanonPrompt({ count }: { count: number }) {
           You have {count} five-star book{count !== 1 ? 's' : ''}
         </h3>
         <p className="text-sm text-neutral-500 leading-relaxed">
-          Which ones stayed with you? Promote them to your canon—the
-          books that changed how you see things.
+          Which ones shaped how you think? Add them to your canon.
         </p>
       </div>
     </div>
@@ -403,6 +493,94 @@ function HasCanonNoSignalsState({ canonCount }: { canonCount: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Inline Follow-Up Component (after promotion)
+// ═══════════════════════════════════════════════════════════════════
+
+function InlineFollowUp({
+  showNoteInput,
+  noteText,
+  onNoteChange,
+  onAddNote,
+  onSaveNote,
+  onDismiss,
+  isSubmitting,
+}: {
+  showNoteInput: boolean;
+  noteText: string;
+  onNoteChange: (text: string) => void;
+  onAddNote: () => void;
+  onSaveNote: () => void;
+  onDismiss: () => void;
+  isSubmitting: boolean;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (showNoteInput && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [showNoteInput]);
+
+  if (showNoteInput) {
+    return (
+      <div className="mt-3 ml-10 p-4 bg-amber-50/50 rounded-xl border border-amber-100 animate-in fade-in duration-200">
+        <label className="block text-sm text-[#1f1a17] mb-2">
+          Why did this one stay with you?
+        </label>
+        <textarea
+          ref={textareaRef}
+          value={noteText}
+          onChange={(e) => onNoteChange(e.target.value)}
+          placeholder="One sentence is enough."
+          className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 bg-white"
+          rows={2}
+          maxLength={500}
+        />
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={onSaveNote}
+            disabled={!noteText.trim() || isSubmitting}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSubmitting ? 'Saving...' : 'Save note'}
+          </button>
+          <button
+            onClick={onDismiss}
+            disabled={isSubmitting}
+            className="px-3 py-1.5 text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 ml-10 p-4 bg-amber-50/50 rounded-xl border border-amber-100 animate-in fade-in duration-200">
+      <p className="text-sm text-neutral-600 mb-3">
+        Why did this one stay with you?{' '}
+        <span className="text-neutral-400">(Optional)</span>
+      </p>
+      <div className="flex gap-2">
+        <button
+          onClick={onAddNote}
+          className="px-3 py-1.5 text-xs font-medium text-[#1f1a17] bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+        >
+          Add a note
+        </button>
+        <button
+          onClick={onDismiss}
+          className="px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+        >
+          Not now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Book Card Components
 // ═══════════════════════════════════════════════════════════════════
 
@@ -419,6 +597,7 @@ function CanonBookCard({
   onToggleNotes: () => void;
   onRemove: () => void;
 }) {
+  const [showMenu, setShowMenu] = useState(false);
   const reflectionNote = item.canonEntry?.reflectionNote;
   const cleanedNotes = item.userNotes ? normalizeGoodreadsText(item.userNotes) : null;
   const hasNotes = reflectionNote || cleanedNotes;
@@ -426,7 +605,7 @@ function CanonBookCard({
   const isLongNote = displayNote && displayNote.length > 150;
 
   return (
-    <div className="group bg-white rounded-2xl border border-black/5 shadow-sm p-5 hover:shadow-md transition-all">
+    <div className="group bg-white rounded-2xl border border-black/5 shadow-sm p-5 hover:shadow-md transition-all relative">
       <div className="flex gap-4">
         {/* Position indicator */}
         <div className="flex-shrink-0 w-6 text-center">
@@ -445,12 +624,49 @@ function CanonBookCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[#1f1a17]">
-            {item.book.title}
-          </h3>
-          {item.book.author && (
-            <p className="text-sm text-neutral-500">{item.book.author}</p>
-          )}
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold text-[#1f1a17]">
+                {item.book.title}
+              </h3>
+              {item.book.author && (
+                <p className="text-sm text-neutral-500">{item.book.author}</p>
+              )}
+            </div>
+
+            {/* Overflow menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1 text-neutral-300 hover:text-neutral-500 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="3" r="1.5" />
+                  <circle cx="8" cy="8" r="1.5" />
+                  <circle cx="8" cy="13" r="1.5" />
+                </svg>
+              </button>
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-6 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px]">
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onRemove();
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Remove from canon
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
 
           {/* Reflection/Notes */}
           {hasNotes && (
@@ -473,16 +689,6 @@ function CanonBookCard({
               )}
             </div>
           )}
-
-          {/* Actions */}
-          <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={onRemove}
-              className="text-xs text-neutral-400 hover:text-red-500 transition-colors"
-            >
-              Remove from canon
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -500,13 +706,14 @@ function FiveStarBookCard({
   onToggleNotes: () => void;
   onPromote: () => void;
 }) {
+  const [showMenu, setShowMenu] = useState(false);
   const cleanedNotes = item.userNotes ? normalizeGoodreadsText(item.userNotes) : null;
   const hasNotes = cleanedNotes && cleanedNotes.length > 0;
   const isLongNote = hasNotes && cleanedNotes.length > 150;
   const sourceName = item.sourcePersonName;
 
   return (
-    <div className="group bg-white rounded-2xl border border-black/5 shadow-sm p-5 hover:shadow-md transition-all">
+    <div className="group bg-white rounded-2xl border border-black/5 shadow-sm p-5 hover:shadow-md transition-all relative">
       <div className="flex gap-4">
         {/* Cover */}
         <BookCover
@@ -525,6 +732,39 @@ function FiveStarBookCard({
               </h3>
               {item.book.author && (
                 <p className="text-sm text-neutral-500">{item.book.author}</p>
+              )}
+            </div>
+
+            {/* Overflow menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1 text-neutral-300 hover:text-neutral-500 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="3" r="1.5" />
+                  <circle cx="8" cy="8" r="1.5" />
+                  <circle cx="8" cy="13" r="1.5" />
+                </svg>
+              </button>
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-6 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px]">
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onPromote();
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-[#1f1a17] hover:bg-neutral-50 transition-colors"
+                    >
+                      Add to canon
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -576,28 +816,34 @@ function FiveStarBookCard({
 
 function PromoteToCanonModal({
   book,
-  reflectionNote,
-  onNoteChange,
   onConfirm,
   onCancel,
   isSubmitting,
 }: {
   book: UserBookStatus;
-  reflectionNote: string;
-  onNoteChange: (note: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
   isSubmitting: boolean;
 }) {
+  // Handle keyboard
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter' && !isSubmitting) onConfirm();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel, onConfirm, isSubmitting]);
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-[#1f1a17] mb-2">
-          Add to your canon
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <h3 className="text-lg font-semibold text-[#1f1a17] mb-3">
+          Add to your canon?
         </h3>
-        <p className="text-sm text-neutral-500 mb-6">
-          Canon books are the ones that stayed with you—the ones that
-          changed how you see things.
+        <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
+          Canon is for books that shaped how you think.
+          This book will still stay in your library.
         </p>
 
         {/* Book preview */}
@@ -616,22 +862,6 @@ function PromoteToCanonModal({
           </div>
         </div>
 
-        {/* Reflection prompt */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-[#1f1a17] mb-2">
-            Why did this one stay with you?
-            <span className="text-neutral-400 font-normal"> (optional)</span>
-          </label>
-          <textarea
-            value={reflectionNote}
-            onChange={(e) => onNoteChange(e.target.value)}
-            placeholder="A sentence or two..."
-            className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
-            rows={3}
-            maxLength={500}
-          />
-        </div>
-
         {/* Actions */}
         <div className="flex gap-3 justify-end">
           <Button
@@ -644,8 +874,57 @@ function PromoteToCanonModal({
           <Button
             onClick={onConfirm}
             disabled={isSubmitting}
+            autoFocus
           >
             {isSubmitting ? 'Adding...' : 'Add to canon'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CanonFullModal({
+  book,
+  onReviewCanon,
+  onCancel,
+}: {
+  book: UserBookStatus;
+  onReviewCanon: () => void;
+  onCancel: () => void;
+}) {
+  // Handle keyboard
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <h3 className="text-lg font-semibold text-[#1f1a17] mb-3">
+          Your canon is full
+        </h3>
+        <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
+          To add <strong>{book.book.title}</strong>, remove one from your canon first.
+        </p>
+
+        {/* Actions */}
+        <div className="flex gap-3 justify-end">
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onReviewCanon}
+            autoFocus
+          >
+            Review canon
           </Button>
         </div>
       </div>
@@ -664,15 +943,23 @@ function RemoveFromCanonModal({
   onCancel: () => void;
   isSubmitting: boolean;
 }) {
+  // Handle keyboard
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-[#1f1a17] mb-2">
+      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <h3 className="text-lg font-semibold text-[#1f1a17] mb-3">
           Remove from canon?
         </h3>
-        <p className="text-sm text-neutral-500 mb-6">
-          <strong>{book.book.title}</strong> will move back to your
-          five-star books. You can always add it back later.
+        <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
+          This book will stay in your library.
         </p>
 
         {/* Actions */}
@@ -682,7 +969,7 @@ function RemoveFromCanonModal({
             onClick={onCancel}
             disabled={isSubmitting}
           >
-            Keep in canon
+            Cancel
           </Button>
           <button
             onClick={onConfirm}

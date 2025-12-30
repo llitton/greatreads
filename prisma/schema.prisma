@@ -188,6 +188,9 @@ model UserBookStatus {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   book        Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
   canonEntry  CanonEntry?  // If in user's canon
+  stayedEntry StayedEntry? // If in user's "Stayed" list
+  reflection  Reflection?  // User's reflection on this book
+  signals     BookSignal[] // System-detected signals
 
   @@unique([userId, bookId])
   @@index([userId])
@@ -215,6 +218,65 @@ model CanonEntry {
 
   @@index([userBookId])
   @@index([addedAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Stayed: Books that kept returning to the user
+// Stayed is for reflection. Canon is for identity.
+// ═══════════════════════════════════════════════════════════════════
+
+enum SignalType {
+  REVISITED          // User came back to this book
+  UNRESOLVED         // Started but abandoned reflection, or keeps editing
+  PERSPECTIVE_SHIFT  // Explicit indication the book changed their view
+}
+
+model BookSignal {
+  id           String     @id @default(cuid())
+  userBookId   String
+  userBook     UserBookStatus @relation(fields: [userBookId], references: [id], onDelete: Cascade)
+
+  type         SignalType
+  confidence   Float      @default(0)  // 0-1, decays over time
+  detectedAt   DateTime   @default(now())
+  lastActivityAt DateTime @default(now())  // For decay calculation
+
+  @@index([userBookId])
+  @@index([confidence])
+  @@index([type])
+}
+
+model Reflection {
+  id           String    @id @default(cuid())
+  userBookId   String    @unique
+  userBook     UserBookStatus @relation(fields: [userBookId], references: [id], onDelete: Cascade)
+
+  content      String    @db.Text
+  visibility   String    @default("PRIVATE")  // PRIVATE only for now
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userBookId])
+  @@index([updatedAt])
+}
+
+enum StayedSource {
+  SYSTEM  // Added via signal threshold
+  USER    // Explicitly added by user
+}
+
+model StayedEntry {
+  id           String       @id @default(cuid())
+  userBookId   String       @unique
+  userBook     UserBookStatus @relation(fields: [userBookId], references: [id], onDelete: Cascade)
+
+  source       StayedSource @default(USER)
+  enteredAt    DateTime     @default(now())
+  dismissedAt  DateTime?    // For "Revisit" dismissal tracking
+  dismissCount Int          @default(0)  // Track how many times dismissed
+
+  @@index([userBookId])
+  @@index([enteredAt])
 }
 
 model TopTen {

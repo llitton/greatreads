@@ -12,7 +12,7 @@ const discoveryItems = [
 
 // Reflection section
 const reflectionItems = [
-  { href: '/reflections', label: 'Stayed', icon: '💭' },
+  { href: '/stayed', label: 'Stayed', icon: '💭' },
   { href: '/top10', label: 'Top 10', icon: '🏆' },
 ];
 
@@ -159,7 +159,7 @@ export function SidebarContent() {
 const mobileNavItems = [
   { href: '/feed', label: 'Signals', icon: '✦' },
   { href: '/my-books', label: 'My Books', icon: '📚' },
-  { href: '/reflections', label: 'Stayed', icon: '💭' },
+  { href: '/stayed', label: 'Stayed', icon: '💭' },
   { href: '/top10', label: 'Top 10', icon: '🏆' },
 ];
 
