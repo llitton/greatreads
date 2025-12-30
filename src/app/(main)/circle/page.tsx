@@ -4,89 +4,436 @@ import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/ui/status-pill';
 import { normalizeGoodreadsUrl } from '@/lib/goodreads/url';
-import {
-  mapDatabaseStatus,
-  inferSourceType,
-  type SourceState,
-  type SourceStatus,
-  type SourceType,
-} from '@/lib/sources/types';
-import {
-  getErrorCopy,
-  getWarningCopy,
-  getStatusBadgeText,
-  getStatusBadgeVariant,
-} from '@/lib/sources/errors';
+import type { PersonStatus, CirclePerson, CircleSummary, CircleSource } from '@/lib/circle';
 
-interface DatabaseSource {
-  id: string;
-  url: string;
-  title: string | null;
-  status: string;
-  failureReasonCode: string | null;
-  lastSuccessAt: string | null;
-  lastAttemptAt: string | null;
-  nextAttemptAt: string | null;
-  itemCount?: number;
-  createdAt: string;
+// ═══════════════════════════════════════════════════════════════════
+// Types
+// ═══════════════════════════════════════════════════════════════════
+
+interface CircleData {
+  people: CirclePerson[];
+  summary: CircleSummary;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Status Helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function getStatusLabel(status: PersonStatus): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'Active';
+    case 'QUIET':
+      return 'Quiet';
+    case 'WARNING':
+      return 'Needs attention';
+    case 'PAUSED':
+      return 'Paused';
+    case 'MUTED':
+      return 'Muted';
+  }
+}
+
+function getStatusVariant(status: PersonStatus): 'active' | 'new' | 'danger' | 'muted' | 'default' {
+  switch (status) {
+    case 'ACTIVE':
+      return 'active';
+    case 'QUIET':
+      return 'muted';
+    case 'WARNING':
+      return 'new'; // amber/warning color
+    case 'PAUSED':
+      return 'muted';
+    case 'MUTED':
+      return 'muted';
+  }
+}
+
+function getStatusDescription(status: PersonStatus): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'Signals are flowing normally.';
+    case 'QUIET':
+      return 'No five-star reads recently.';
+    case 'WARNING':
+      return "We're having trouble checking one source.";
+    case 'PAUSED':
+      return 'All sources are paused.';
+    case 'MUTED':
+      return "You won't be interrupted by this person.";
+  }
+}
+
+function formatRelativeTime(date: Date | string | null): string {
+  if (!date) return 'never';
+  const d = new Date(date);
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks}w ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatDate(date: Date | string): string {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Components
+// ═══════════════════════════════════════════════════════════════════
+
+function PersonAvatar({ name, avatarUrl, size = 'md' }: { name: string; avatarUrl?: string | null; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClasses = {
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base',
+  };
+
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        className={`${sizeClasses[size]} rounded-full object-cover bg-neutral-100`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${sizeClasses[size]} rounded-full bg-neutral-100 flex items-center justify-center font-medium text-neutral-500`}
+    >
+      {initials}
+    </div>
+  );
+}
+
+function PersonCard({
+  person,
+  onManage,
+  onMute,
+  onRemove,
+}: {
+  person: CirclePerson;
+  onManage: () => void;
+  onMute: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="bg-white rounded-xl border border-black/5 p-5">
+      <div className="flex items-start gap-4">
+        {/* Avatar */}
+        <PersonAvatar name={person.displayName} avatarUrl={person.avatarUrl} size="lg" />
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-[#1f1a17] truncate">
+              {person.displayName}
+            </h3>
+            <StatusPill variant={getStatusVariant(person.status)}>
+              {getStatusLabel(person.status)}
+            </StatusPill>
+          </div>
+
+          {/* Impact stats */}
+          <p className="text-sm text-neutral-500">
+            {person.booksSurfaced > 0 ? (
+              <>
+                <span className="text-amber-500">★★★★★</span>{' '}
+                {person.booksSurfaced} book{person.booksSurfaced !== 1 ? 's' : ''} surfaced
+                {person.booksInCanon > 0 && (
+                  <> · {person.booksInCanon} in your canon</>
+                )}
+              </>
+            ) : (
+              'No signals yet'
+            )}
+          </p>
+
+          {/* Last signal */}
+          {person.lastSignalBookTitle && (
+            <p className="text-xs text-neutral-400 mt-1">
+              Last signal: {person.lastSignalBookTitle} · {formatRelativeTime(person.lastSignalAt)}
+            </p>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 mt-3">
+            {person.booksSurfaced > 0 && (
+              <button
+                onClick={() => {/* TODO: Navigate to signals filtered by person */}}
+                className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
+              >
+                View signals
+              </button>
+            )}
+            <button
+              onClick={onManage}
+              className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
+            >
+              Manage
+            </button>
+            <button
+              onClick={onMute}
+              className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
+            >
+              {person.isMuted ? 'Unmute' : 'Mute'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ManageDrawer({
+  person,
+  sources,
+  impact,
+  onClose,
+  onRetrySource,
+  onMute,
+  onRemove,
+}: {
+  person: { id: string; displayName: string; avatarUrl?: string | null; trustedSince: Date | string; isMuted: boolean };
+  sources: Array<CircleSource & { title?: string }>;
+  impact: { booksSurfaced: number; booksInCanon: number; lastSignalAt: Date | null; lastSignalBookTitle: string | null };
+  onClose: () => void;
+  onRetrySource: (sourceId: string) => void;
+  onMute: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+
+      {/* Drawer */}
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-xl z-50 overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-black/5 p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <PersonAvatar name={person.displayName} avatarUrl={person.avatarUrl} />
+              <div>
+                <h2 className="font-semibold text-[#1f1a17]">{person.displayName}</h2>
+                <p className="text-xs text-neutral-400">
+                  Trusted since {formatDate(person.trustedSince)}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 1l12 12M13 1L1 13" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Impact summary */}
+        <div className="p-5 border-b border-black/5">
+          <h3 className="text-xs text-neutral-400 uppercase tracking-wider mb-3">Impact</h3>
+          <div className="space-y-2 text-sm">
+            <p>
+              <span className="text-amber-500">★★★★★</span>{' '}
+              {impact.booksSurfaced} book{impact.booksSurfaced !== 1 ? 's' : ''} surfaced
+            </p>
+            {impact.booksInCanon > 0 && (
+              <p className="text-neutral-600">
+                {impact.booksInCanon} promoted to your canon
+              </p>
+            )}
+            {impact.lastSignalBookTitle && (
+              <p className="text-neutral-500">
+                Last signal: {impact.lastSignalBookTitle} · {formatRelativeTime(impact.lastSignalAt)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Sources */}
+        <div className="p-5 border-b border-black/5">
+          <h3 className="text-xs text-neutral-400 uppercase tracking-wider mb-3">
+            Sources connected to {person.displayName}
+          </h3>
+          <div className="space-y-3">
+            {sources.map((source) => (
+              <div
+                key={source.id}
+                className={`p-4 rounded-xl border ${
+                  source.status === 'FAILED' || source.status === 'error'
+                    ? 'border-red-100 bg-red-50/30'
+                    : source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'warning'
+                      ? 'border-amber-100 bg-amber-50/30'
+                      : 'border-black/5 bg-neutral-50/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-neutral-400 uppercase">
+                    {source.type}
+                  </span>
+                  <StatusPill
+                    variant={
+                      source.status === 'ACTIVE' || source.status === 'active'
+                        ? 'active'
+                        : source.status === 'FAILED' || source.status === 'error'
+                          ? 'danger'
+                          : source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'warning'
+                            ? 'new'
+                            : 'muted'
+                    }
+                  >
+                    {source.status === 'ACTIVE' || source.status === 'active'
+                      ? 'Active'
+                      : source.status === 'FAILED' || source.status === 'error'
+                        ? 'Failed'
+                        : source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'warning'
+                          ? 'Needs attention'
+                          : 'Paused'}
+                  </StatusPill>
+                </div>
+                <p className="text-sm text-neutral-600 truncate mb-1">
+                  {source.url || 'No URL'}
+                </p>
+                <p className="text-xs text-neutral-400">
+                  Last checked {formatRelativeTime(source.lastSuccessAt)}
+                </p>
+
+                {(source.status === 'FAILED' || source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'error' || source.status === 'warning') && (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => onRetrySource(source.id)}
+                      className="px-3 py-1.5 text-xs font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] transition-colors"
+                    >
+                      Retry now
+                    </button>
+                    <button
+                      className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-[#1f1a17] transition-colors"
+                    >
+                      Edit URL
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="p-5 space-y-4">
+          <button
+            onClick={onMute}
+            className="w-full p-4 text-left rounded-xl border border-black/5 hover:bg-neutral-50 transition-colors"
+          >
+            <p className="font-medium text-[#1f1a17]">
+              {person.isMuted ? 'Unmute' : 'Mute'} {person.displayName}
+            </p>
+            <p className="text-xs text-neutral-400 mt-1">
+              {person.isMuted
+                ? 'Start receiving signals again.'
+                : 'Stops future interruptions without removing trust.'}
+            </p>
+          </button>
+
+          <button
+            onClick={onRemove}
+            className="w-full p-4 text-left rounded-xl border border-red-100 hover:bg-red-50/50 transition-colors"
+          >
+            <p className="font-medium text-red-600">
+              Remove from circle
+            </p>
+            <p className="text-xs text-neutral-400 mt-1">
+              Removes {person.displayName} and all associated signals.
+            </p>
+          </button>
+
+          <p className="text-xs text-neutral-300 text-center pt-2">
+            Changes affect future signals only. Your library stays intact.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Main Page
+// ═══════════════════════════════════════════════════════════════════
+
 export default function CirclePage() {
-  const [sources, setSources] = useState<SourceState[]>([]);
+  const [data, setData] = useState<CircleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [retrying, setRetrying] = useState<string | null>(null);
+  const [managingPerson, setManagingPerson] = useState<string | null>(null);
+  const [personDetails, setPersonDetails] = useState<{
+    person: { id: string; displayName: string; avatarUrl?: string | null; trustedSince: Date; isMuted: boolean };
+    sources: Array<CircleSource & { title?: string }>;
+    impact: { booksSurfaced: number; booksInCanon: number; lastSignalAt: Date | null; lastSignalBookTitle: string | null };
+  } | null>(null);
 
-  // Add source form state
+  // Add form state
   const [sourceName, setSourceName] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [urlConverted, setUrlConverted] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  const fetchSources = useCallback(async () => {
+  const fetchCircle = useCallback(async () => {
     try {
-      const res = await fetch('/api/rss/inbox/sources');
+      const res = await fetch('/api/circle');
       if (res.ok) {
-        const data = await res.json();
-        const mapped: SourceState[] = (data.sources || []).map((s: DatabaseSource) => {
-          const { status, errorCode, warningCode } = mapDatabaseStatus(
-            s.status,
-            s.failureReasonCode
-          );
-          return {
-            id: s.id,
-            name: s.title || 'Untitled',
-            url: s.url,
-            type: inferSourceType(s.url),
-            status,
-            errorCode,
-            warningCode,
-            lastCheckedAt: s.lastSuccessAt ? new Date(s.lastSuccessAt) : null,
-            nextRetryAt: s.nextAttemptAt ? new Date(s.nextAttemptAt) : null,
-            itemCount: s.itemCount || 0,
-            createdAt: new Date(s.createdAt),
-          };
-        });
-        setSources(mapped);
+        const circleData = await res.json();
+        setData(circleData);
       }
     } catch (error) {
-      console.error('Failed to fetch sources:', error);
+      console.error('Failed to fetch circle:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchSources();
-  }, [fetchSources]);
+  const fetchPersonDetails = useCallback(async (personId: string) => {
+    try {
+      const res = await fetch(`/api/circle/${personId}`);
+      if (res.ok) {
+        const details = await res.json();
+        setPersonDetails(details);
+      }
+    } catch (error) {
+      console.error('Failed to fetch person details:', error);
+    }
+  }, []);
 
-  // Group sources by status
-  const activeSources = sources.filter((s) => s.status === 'active');
-  const warningSources = sources.filter((s) => s.status === 'warning');
-  const errorSources = sources.filter((s) => s.status === 'error');
-  const pausedSources = sources.filter((s) => s.status === 'paused');
-  const needsAttention = [...warningSources, ...errorSources];
+  useEffect(() => {
+    fetchCircle();
+  }, [fetchCircle]);
+
+  useEffect(() => {
+    if (managingPerson) {
+      fetchPersonDetails(managingPerson);
+    } else {
+      setPersonDetails(null);
+    }
+  }, [managingPerson, fetchPersonDetails]);
 
   const handleUrlChange = (inputUrl: string) => {
     setAddError(null);
@@ -99,17 +446,17 @@ export default function CirclePage() {
   };
 
   const handleAdd = async () => {
-    if (!sourceUrl || !sourceName) return;
+    if (!sourceName.trim()) return;
     setAdding(true);
     setAddError(null);
 
     try {
-      const res = await fetch('/api/rss/inbox/sources', {
+      const res = await fetch('/api/circle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: sourceUrl,
-          titleOverride: sourceName,
+          name: sourceName.trim(),
+          rssUrl: sourceUrl || undefined,
         }),
       });
 
@@ -118,93 +465,54 @@ export default function CirclePage() {
         setSourceName('');
         setSourceUrl('');
         setUrlConverted(false);
-        fetchSources();
+        fetchCircle();
       } else {
-        const data = await res.json();
-        setAddError(data.error || 'Failed to add source');
+        const errorData = await res.json();
+        setAddError(errorData.error || 'Failed to add person');
       }
     } catch {
-      setAddError('Failed to add source');
+      setAddError('Failed to add person');
     } finally {
       setAdding(false);
     }
   };
 
-  const handleRetry = async (sourceId: string) => {
-    setRetrying(sourceId);
+  const handleMute = async (personId: string, currentlyMuted: boolean) => {
     try {
-      // Trigger a re-check of the source
-      const res = await fetch(`/api/rss/inbox/sources/${sourceId}/retry`, {
-        method: 'POST',
+      await fetch('/api/circle', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ personId, muted: !currentlyMuted }),
       });
-      if (res.ok) {
-        fetchSources();
+      fetchCircle();
+      if (managingPerson) {
+        fetchPersonDetails(managingPerson);
       }
     } catch (error) {
-      console.error('Failed to retry:', error);
-    } finally {
-      setRetrying(null);
+      console.error('Failed to mute/unmute:', error);
     }
   };
 
-  const handlePause = async (sourceId: string) => {
-    try {
-      await fetch(`/api/rss/inbox/sources/${sourceId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'PAUSED' }),
-      });
-      fetchSources();
-    } catch (error) {
-      console.error('Failed to pause:', error);
-    }
-  };
-
-  const handleResume = async (sourceId: string) => {
-    try {
-      await fetch(`/api/rss/inbox/sources/${sourceId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'ACTIVE' }),
-      });
-      fetchSources();
-    } catch (error) {
-      console.error('Failed to resume:', error);
-    }
-  };
-
-  const handleRemove = async (sourceId: string) => {
-    if (!confirm('Remove this source? You can always add them back later.')) return;
+  const handleRemove = async (personId: string) => {
+    if (!confirm('Remove this person? You can always add them back later.')) return;
 
     try {
-      await fetch(`/api/rss/inbox/sources/${sourceId}`, {
-        method: 'DELETE',
-      });
-      fetchSources();
+      await fetch(`/api/circle/${personId}`, { method: 'DELETE' });
+      setManagingPerson(null);
+      fetchCircle();
     } catch (error) {
       console.error('Failed to remove:', error);
     }
   };
 
-  const formatLastChecked = (date: Date | null) => {
-    if (!date) return 'Never checked';
-    const mins = Math.floor((Date.now() - date.getTime()) / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  };
-
-  const getSourceTypeLabel = (type: SourceType) => {
-    switch (type) {
-      case 'goodreads':
-        return 'Goodreads';
-      case 'newsletter':
-        return 'Newsletter';
-      default:
-        return 'RSS';
+  const handleRetrySource = async (sourceId: string) => {
+    try {
+      await fetch(`/api/rss/inbox/sources/${sourceId}/retry`, { method: 'POST' });
+      if (managingPerson) {
+        fetchPersonDetails(managingPerson);
+      }
+    } catch (error) {
+      console.error('Failed to retry source:', error);
     }
   };
 
@@ -219,51 +527,73 @@ export default function CirclePage() {
     );
   }
 
+  const people = data?.people || [];
+  const summary = data?.summary;
+
+  // Group people by status
+  const activePeople = people.filter((p) => p.status === 'ACTIVE' || p.status === 'QUIET');
+  const warningPeople = people.filter((p) => p.status === 'WARNING');
+  const mutedPeople = people.filter((p) => p.status === 'MUTED');
+  const pausedPeople = people.filter((p) => p.status === 'PAUSED');
+
   return (
     <div className="max-w-2xl mx-auto px-5 py-12">
       {/* Header */}
-      <header className="mb-12">
+      <header className="mb-8">
         <h1 className="text-2xl font-serif font-semibold text-[#1f1a17] mb-2">
-          Your Circle
+          Your circle
         </h1>
         <p className="text-[15px] text-neutral-500 leading-relaxed">
-          People and publications shaping your recommendations.
+          The people whose taste can interrupt you.
+        </p>
+        <p className="text-xs text-neutral-400 mt-1">
+          Only five-star reads from your circle surface as signals.
         </p>
       </header>
 
-      {sources.length === 0 ? (
+      {/* Summary strip */}
+      {summary && people.length > 0 && (
+        <div className="flex items-center gap-4 text-sm text-neutral-500 mb-8 pb-8 border-b border-black/5">
+          <span>
+            {summary.peopleCount} {summary.peopleCount === 1 ? 'person' : 'people'}
+          </span>
+          <span className="text-neutral-200">·</span>
+          <span>{summary.sourceCount} {summary.sourceCount === 1 ? 'source' : 'sources'}</span>
+          {summary.lastSignalAt && (
+            <>
+              <span className="text-neutral-200">·</span>
+              <span>Last signal {formatRelativeTime(summary.lastSignalAt)}</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {people.length === 0 ? (
         /* Empty state */
         <section className="text-center py-16">
           <p className="text-[17px] text-neutral-500 mb-2">
             Your circle is empty.
           </p>
-          <p className="text-sm text-neutral-400 mb-8">
-            Add one person whose taste you trust.
+          <p className="text-sm text-neutral-400 mb-8 max-w-xs mx-auto">
+            Add one person whose taste you trust. Books appear only when they give five stars.
           </p>
           <Button size="lg" onClick={() => setShowAddModal(true)}>
-            Add someone
+            Add someone you trust
           </Button>
         </section>
       ) : (
-        <div className="space-y-12">
-          {/* Active sources */}
-          {activeSources.length > 0 && (
+        <div className="space-y-10">
+          {/* Active people */}
+          {activePeople.length > 0 && (
             <section>
-              <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-5">
-                Active
-              </h2>
               <div className="space-y-3">
-                {activeSources.map((source) => (
-                  <SourceRow
-                    key={source.id}
-                    source={source}
-                    onRetry={() => handleRetry(source.id)}
-                    onPause={() => handlePause(source.id)}
-                    onResume={() => handleResume(source.id)}
-                    onRemove={() => handleRemove(source.id)}
-                    retrying={retrying === source.id}
-                    formatLastChecked={formatLastChecked}
-                    getSourceTypeLabel={getSourceTypeLabel}
+                {activePeople.map((person) => (
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    onManage={() => setManagingPerson(person.id)}
+                    onMute={() => handleMute(person.id, person.isMuted)}
+                    onRemove={() => handleRemove(person.id)}
                   />
                 ))}
               </div>
@@ -271,24 +601,39 @@ export default function CirclePage() {
           )}
 
           {/* Needs attention */}
-          {needsAttention.length > 0 && (
+          {warningPeople.length > 0 && (
             <section>
-              <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-5">
+              <h2 className="text-xs text-amber-600 uppercase tracking-widest mb-4">
                 Needs attention
               </h2>
               <div className="space-y-3">
-                {needsAttention.map((source) => (
-                  <SourceRow
-                    key={source.id}
-                    source={source}
-                    onRetry={() => handleRetry(source.id)}
-                    onPause={() => handlePause(source.id)}
-                    onResume={() => handleResume(source.id)}
-                    onRemove={() => handleRemove(source.id)}
-                    retrying={retrying === source.id}
-                    formatLastChecked={formatLastChecked}
-                    getSourceTypeLabel={getSourceTypeLabel}
-                    showIssue
+                {warningPeople.map((person) => (
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    onManage={() => setManagingPerson(person.id)}
+                    onMute={() => handleMute(person.id, person.isMuted)}
+                    onRemove={() => handleRemove(person.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Muted */}
+          {mutedPeople.length > 0 && (
+            <section>
+              <h2 className="text-xs text-neutral-400 uppercase tracking-widest mb-4">
+                Muted
+              </h2>
+              <div className="space-y-3">
+                {mutedPeople.map((person) => (
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    onManage={() => setManagingPerson(person.id)}
+                    onMute={() => handleMute(person.id, person.isMuted)}
+                    onRemove={() => handleRemove(person.id)}
                   />
                 ))}
               </div>
@@ -296,23 +641,19 @@ export default function CirclePage() {
           )}
 
           {/* Paused */}
-          {pausedSources.length > 0 && (
+          {pausedPeople.length > 0 && (
             <section>
-              <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-5">
+              <h2 className="text-xs text-neutral-400 uppercase tracking-widest mb-4">
                 Paused
               </h2>
               <div className="space-y-3">
-                {pausedSources.map((source) => (
-                  <SourceRow
-                    key={source.id}
-                    source={source}
-                    onRetry={() => handleRetry(source.id)}
-                    onPause={() => handlePause(source.id)}
-                    onResume={() => handleResume(source.id)}
-                    onRemove={() => handleRemove(source.id)}
-                    retrying={retrying === source.id}
-                    formatLastChecked={formatLastChecked}
-                    getSourceTypeLabel={getSourceTypeLabel}
+                {pausedPeople.map((person) => (
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    onManage={() => setManagingPerson(person.id)}
+                    onMute={() => handleMute(person.id, person.isMuted)}
+                    onRemove={() => handleRemove(person.id)}
                   />
                 ))}
               </div>
@@ -321,6 +662,9 @@ export default function CirclePage() {
 
           {/* Add action */}
           <section className="pt-4">
+            <p className="text-xs text-neutral-400 mb-3">
+              Add someone whose five-star reads you trust.
+            </p>
             <Button onClick={() => setShowAddModal(true)}>
               Add someone
             </Button>
@@ -328,11 +672,16 @@ export default function CirclePage() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="mt-16 pt-8 border-t border-neutral-100 text-center">
-        <p className="text-sm text-neutral-300 italic">
-          Quality over quantity.
-        </p>
+      {/* Philosophy footer */}
+      <footer className="mt-16 pt-8 border-t border-neutral-100">
+        <div className="bg-neutral-50/50 rounded-xl p-5 text-center">
+          <p className="text-sm text-neutral-400 mb-2">
+            A small circle is a strong one.
+          </p>
+          <p className="text-xs text-neutral-300">
+            Most people trust 3–7 sources. Quality over quantity.
+          </p>
+        </div>
       </footer>
 
       {/* Add Modal */}
@@ -383,6 +732,7 @@ export default function CirclePage() {
               <div>
                 <label className="block text-sm font-medium text-[#1f1a17] mb-2">
                   Their Goodreads profile or RSS feed
+                  <span className="font-normal text-neutral-400"> (optional)</span>
                 </label>
                 <input
                   type="url"
@@ -407,165 +757,30 @@ export default function CirclePage() {
               <div className="pt-2">
                 <Button
                   onClick={handleAdd}
-                  disabled={!sourceUrl || !sourceName || adding}
+                  disabled={!sourceName.trim() || adding}
                   className="w-full"
                   size="lg"
                 >
-                  {adding ? 'Adding...' : `Add ${sourceName || 'person'}`}
+                  {adding ? 'Adding...' : `Add ${sourceName.trim() || 'person'}`}
                 </Button>
               </div>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-/**
- * Source Row Component
- */
-function SourceRow({
-  source,
-  onRetry,
-  onPause,
-  onResume,
-  onRemove,
-  retrying,
-  formatLastChecked,
-  getSourceTypeLabel,
-  showIssue = false,
-}: {
-  source: SourceState;
-  onRetry: () => void;
-  onPause: () => void;
-  onResume: () => void;
-  onRemove: () => void;
-  retrying: boolean;
-  formatLastChecked: (date: Date | null) => string;
-  getSourceTypeLabel: (type: SourceType) => string;
-  showIssue?: boolean;
-}) {
-  const [showMenu, setShowMenu] = useState(false);
-
-  const errorCopy = source.errorCode ? getErrorCopy(source.errorCode) : null;
-  const warningCopy = source.warningCode ? getWarningCopy(source.warningCode) : null;
-
-  return (
-    <div
-      className={`bg-white rounded-xl border p-4 ${
-        source.status === 'error'
-          ? 'border-red-100 bg-red-50/30'
-          : source.status === 'warning'
-            ? 'border-amber-100 bg-amber-50/30'
-            : 'border-black/5'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium text-[#1f1a17] truncate">
-              {source.name}
-            </h3>
-            <StatusPill variant={getStatusBadgeVariant(source.status)}>
-              {getStatusBadgeText(source.status, source.warningCode)}
-            </StatusPill>
-          </div>
-          <p className="text-xs text-neutral-400">
-            {getSourceTypeLabel(source.type)} · Last checked {formatLastChecked(source.lastCheckedAt)}
-          </p>
-
-          {/* Show issue details if applicable */}
-          {showIssue && (errorCopy || warningCopy) && (
-            <div className="mt-3 pt-3 border-t border-black/5">
-              <p className={`text-sm font-medium ${source.status === 'error' ? 'text-red-700' : 'text-amber-700'}`}>
-                {errorCopy?.title || warningCopy?.title}
-              </p>
-              <p className={`text-xs mt-1 ${source.status === 'error' ? 'text-red-600' : 'text-amber-600'}`}>
-                {errorCopy?.body || warningCopy?.body}
-              </p>
-              {errorCopy?.action && (
-                <p className="text-xs text-neutral-500 mt-2">
-                  {errorCopy.action}
-                </p>
-              )}
-              {errorCopy?.showRetry && (
-                <button
-                  onClick={onRetry}
-                  disabled={retrying}
-                  className="mt-3 px-3 py-1.5 text-xs font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] disabled:opacity-50 transition-colors"
-                >
-                  {retrying ? 'Checking...' : 'Try again'}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Actions menu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <circle cx="8" cy="3" r="1.5" />
-              <circle cx="8" cy="8" r="1.5" />
-              <circle cx="8" cy="13" r="1.5" />
-            </svg>
-          </button>
-
-          {showMenu && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowMenu(false)}
-              />
-              <div className="absolute right-0 top-10 w-40 bg-white rounded-xl shadow-lg border border-black/5 py-1 z-20">
-                {source.status === 'paused' ? (
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      onResume();
-                    }}
-                    className="w-full px-4 py-2 text-sm text-left text-[#1f1a17] hover:bg-neutral-50"
-                  >
-                    Resume
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      onPause();
-                    }}
-                    className="w-full px-4 py-2 text-sm text-left text-[#1f1a17] hover:bg-neutral-50"
-                  >
-                    Pause
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onRetry();
-                  }}
-                  className="w-full px-4 py-2 text-sm text-left text-[#1f1a17] hover:bg-neutral-50"
-                >
-                  Check now
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onRemove();
-                  }}
-                  className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50"
-                >
-                  Remove
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      {/* Manage Drawer */}
+      {managingPerson && personDetails && (
+        <ManageDrawer
+          person={personDetails.person}
+          sources={personDetails.sources}
+          impact={personDetails.impact}
+          onClose={() => setManagingPerson(null)}
+          onRetrySource={handleRetrySource}
+          onMute={() => handleMute(personDetails.person.id, personDetails.person.isMuted)}
+          onRemove={() => handleRemove(personDetails.person.id)}
+        />
+      )}
     </div>
   );
 }

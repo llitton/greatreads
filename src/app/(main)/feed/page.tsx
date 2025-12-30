@@ -22,9 +22,9 @@ interface TopTen {
   items: TopTenItem[];
 }
 
-interface Source {
+interface CirclePerson {
   id: string;
-  title: string | null;
+  displayName: string;
   status: string;
 }
 
@@ -45,7 +45,7 @@ interface SignalItem {
 
 export default function FeedPage() {
   const [topTen, setTopTen] = useState<TopTen | null>(null);
-  const [sources, setSources] = useState<Source[]>([]);
+  const [circlePeople, setCirclePeople] = useState<CirclePerson[]>([]);
   const [signals, setSignals] = useState<SignalItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -59,9 +59,9 @@ export default function FeedPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [topTenRes, sourcesRes, signalsRes] = await Promise.all([
+      const [topTenRes, circleRes, signalsRes] = await Promise.all([
         fetch('/api/top10'),
-        fetch('/api/rss/inbox/sources'),
+        fetch('/api/circle'),
         fetch('/api/rss/inbox?filter=new&limit=10'),
       ]);
 
@@ -70,9 +70,10 @@ export default function FeedPage() {
         setTopTen(data);
       }
 
-      if (sourcesRes.ok) {
-        const data = await sourcesRes.json();
-        setSources(data.sources || []);
+      if (circleRes.ok) {
+        const data = await circleRes.json();
+        // Get unique people (deduped by person ID)
+        setCirclePeople(data.people || []);
       }
 
       if (signalsRes.ok) {
@@ -131,33 +132,32 @@ export default function FeedPage() {
   };
 
   const handleAddSource = async () => {
-    if (!sourceUrl || !sourceName) return;
+    if (!sourceName.trim()) return;
     setAddingSource(true);
     setAddSourceError(null);
 
     try {
-      const res = await fetch('/api/rss/inbox/sources', {
+      const res = await fetch('/api/circle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: sourceUrl,
-          titleOverride: sourceName,
+          name: sourceName.trim(),
+          rssUrl: sourceUrl || undefined,
         }),
       });
 
       if (res.ok) {
-        const data = await res.json();
-        setSources((prev) => [data.source, ...prev]);
         setShowAddSource(false);
         setSourceUrl('');
         setSourceName('');
         setUrlConverted(false);
+        fetchData(); // Refresh to show new person
       } else {
         const data = await res.json();
-        setAddSourceError(data.error || 'Failed to add source');
+        setAddSourceError(data.error || 'Failed to add person');
       }
     } catch {
-      setAddSourceError('Failed to add source');
+      setAddSourceError('Failed to add person');
     } finally {
       setAddingSource(false);
     }
@@ -183,7 +183,7 @@ export default function FeedPage() {
   }
 
   const hasCanon = topTen && topTen.items.length > 0;
-  const hasSources = sources.length > 0;
+  const hasCircle = circlePeople.length > 0;
   const hasSignals = signals.length > 0;
 
   return (
@@ -210,34 +210,36 @@ export default function FeedPage() {
           Your circle
         </h2>
 
-        {/* Person pills */}
+        {/* Person pills - deduped by Person, not Source */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {hasSources ? (
+          {hasCircle ? (
             <>
-              {sources.map((source) => (
-                <span
-                  key={source.id}
-                  className="inline-flex items-center px-4 py-2 bg-neutral-50 rounded-full text-sm font-medium text-[#1f1a17]"
-                >
-                  {source.title || 'Untitled'}
-                </span>
-              ))}
-              <button
-                onClick={() => setShowAddSource(true)}
+              {circlePeople
+                .filter((p) => p.status !== 'MUTED' && p.status !== 'PAUSED')
+                .map((person) => (
+                  <span
+                    key={person.id}
+                    className="inline-flex items-center px-4 py-2 bg-neutral-50 rounded-full text-sm font-medium text-[#1f1a17]"
+                  >
+                    {person.displayName}
+                  </span>
+                ))}
+              <Link
+                href="/circle"
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
               >
                 <span className="text-lg leading-none">+</span>
                 <span>Add someone</span>
-              </button>
+              </Link>
             </>
           ) : (
-            <button
-              onClick={() => setShowAddSource(true)}
+            <Link
+              href="/circle"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-50 rounded-full text-sm text-neutral-500 hover:bg-neutral-100 transition-colors"
             >
               <span className="text-lg leading-none">+</span>
               <span>Add someone you trust</span>
-            </button>
+            </Link>
           )}
         </div>
 

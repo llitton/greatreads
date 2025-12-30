@@ -71,12 +71,56 @@ model User {
   goodreadsImports     GoodreadsImport[]
   rssSources           RssSource[]
   rssItemActions       RssItemAction[]
+  circleMemberships    CircleMembership[]
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Person: A real human identity in someone's circle
+// This is the canonical representation. There is only one Ken.
+// ═══════════════════════════════════════════════════════════════════
+
+model Person {
+  id              String   @id @default(cuid())
+  displayName     String   // "Ken"
+  normalizedName  String   // "ken" (lowercase, trimmed, collapsed spaces)
+  avatarUrl       String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  rssSources      RssSource[]
+  friendSources   FriendSource[]
+  memberships     CircleMembership[]
+
+  @@index([normalizedName])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CircleMembership: Whether a user trusts a person
+// This is what "Your Circle" actually means.
+// ═══════════════════════════════════════════════════════════════════
+
+model CircleMembership {
+  id        String    @id @default(cuid())
+  userId    String
+  personId  String
+
+  createdAt DateTime  @default(now())
+  mutedAt   DateTime? // optional "keep but don't notify"
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, personId])
+  @@index([userId])
+  @@index([personId])
 }
 
 model FriendSource {
   id             String    @id @default(cuid())
   userId         String
-  label          String // Friend's name
+  label          String // Friend's name (legacy, prefer Person.displayName)
   rssUrl         String?   @db.Text // Optional now - not needed for import-based sources
   sourceUserId   String?   // Link to the actual user account (for import-based sources)
   sourceType     String    @default("rss") // 'rss' or 'import'
@@ -87,12 +131,17 @@ model FriendSource {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  // Link to canonical Person identity
+  personId       String?
+  person         Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
+
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   events     FriendFiveStarEvent[]
 
   @@index([userId])
   @@index([active])
   @@index([sourceUserId])
+  @@index([personId])
 }
 
 model Book {
@@ -453,6 +502,10 @@ model RssSource {
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Link to canonical Person identity (nullable for publication feeds)
+  personId      String?
+  person        Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
+
   url           String    @db.Text
   title         String?   // Feed title (auto-detected or override)
   description   String?   @db.Text
@@ -490,6 +543,7 @@ model RssSource {
   @@unique([userId, url])
   @@index([userId, status])
   @@index([status, nextAttemptAt])
+  @@index([personId])
 }
 
 model RssItem {
