@@ -7,6 +7,10 @@
     {
       "path": "/api/rss/cron/fetch",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/covers/backfill",
+      "schedule": "0 6 * * *"
     }
   ]
 }

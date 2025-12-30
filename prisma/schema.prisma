@@ -117,6 +117,7 @@ model Book {
   userBookStatuses UserBookStatus[]
   topTenItems      TopTenItem[]
   rssItemActions   RssItemAction[]
+  resolvedCover    BookCover?      // Canonical cover (use this, not coverUrl)
 
   @@index([title])
   @@index([isbn])
@@ -158,6 +159,7 @@ enum BookStatus {
 enum CoverSource {
   OPENLIBRARY_ISBN
   OPENLIBRARY_SEARCH
+  OPENLIBRARY_OLID
   GOOGLEBOOKS
   GOODREADS
   MANUAL
@@ -167,6 +169,51 @@ enum CoverConfidence {
   HIGH    // ISBN match found + cover exists
   MEDIUM  // Title/author search match with strong similarity
   LOW     // Weak match but has an image (put in review queue)
+}
+
+enum CoverStatus {
+  PENDING     // Not yet resolved
+  RESOLVING   // Currently being fetched
+  ACTIVE      // Successfully cached
+  DEGRADED    // Source available but caching failed
+  FAILED      // No cover found after all attempts
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BookCover: Canonical cover asset for a book
+// UI should ONLY reference this, never external sources directly
+// ═══════════════════════════════════════════════════════════════════
+
+model BookCover {
+  id            String          @id @default(cuid())
+  bookId        String          @unique
+  book          Book            @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  // Resolved asset we control (CDN URL)
+  imageUrl      String?         @db.Text  // Our cached CDN URL
+  width         Int?
+  height        Int?
+  aspectRatio   Float?          // e.g., 0.67 for 2:3
+
+  // Source tracking
+  source        CoverSource?
+  sourceId      String?         // OLID, ISBN, volumeId, etc.
+  sourceUrl     String?         @db.Text  // Original URL before caching
+  confidence    CoverConfidence?
+
+  // Status tracking
+  status        CoverStatus     @default(PENDING)
+  failureReason String?         // Why it failed
+  attemptCount  Int             @default(0)
+  lastAttemptAt DateTime?
+  resolvedAt    DateTime?
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([status])
+  @@index([source])
+  @@index([confidence])
 }
 
 model UserBookStatus {
