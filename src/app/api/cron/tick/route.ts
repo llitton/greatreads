@@ -1,58 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 
 /**
- * Unified cron dispatcher - runs every 15 minutes
- * Dispatches to individual jobs based on timing logic
+ * Unified cron dispatcher - runs once daily at 06:00 UTC
+ * Runs all background jobs in sequence.
  *
  * Jobs:
- * - RSS fetch: runs at 12:00 UTC
- * - Cover backfill: runs at 06:00 UTC
- * - (Legacy poll is disabled)
+ * - RSS fetch: polls RSS sources for new items
+ * - Cover backfill: resolves missing book covers
+ *
+ * Vercel Hobby plan only allows daily crons, so we run everything
+ * in a single daily tick.
  */
 
 export const maxDuration = 300; // 5 minutes max
 export const dynamic = 'force-dynamic';
-
-// Job configuration: hour (UTC) when each job should run
-const JOB_SCHEDULE = {
-  rssFetch: 12, // 12:00 UTC
-  coverBackfill: 6, // 06:00 UTC
-};
-
-// Track last run in memory for this instance
-// In production, you'd use DB/Redis, but for daily jobs this is fine
-const lastRun: Record<string, number> = {};
-
-function shouldRunJob(jobName: string, targetHour: number): boolean {
-  const now = new Date();
-  const currentHour = now.getUTCHours();
-  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
-
-  // Only run during the target hour
-  if (currentHour !== targetHour) {
-    return false;
-  }
-
-  // Check if we already ran today
-  const lastRunKey = `${jobName}:${today}`;
-  if (lastRun[lastRunKey]) {
-    return false;
-  }
-
-  // Mark as run
-  lastRun[lastRunKey] = Date.now();
-
-  // Cleanup old entries (keep last 7 days)
-  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  for (const key in lastRun) {
-    if (lastRun[key] < cutoff) {
-      delete lastRun[key];
-    }
-  }
-
-  return true;
-}
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -68,55 +29,44 @@ export async function GET(request: NextRequest) {
   const results: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
     jobsRun: [] as string[],
-    jobsSkipped: [] as string[],
   };
+
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
   try {
     // ═══════════════════════════════════════════════════════════════════
     // RSS Fetch Job
     // ═══════════════════════════════════════════════════════════════════
-    if (shouldRunJob('rssFetch', JOB_SCHEDULE.rssFetch)) {
-      console.log('[Cron Tick] Running RSS fetch job...');
-      results.jobsRun = [...(results.jobsRun as string[]), 'rssFetch'];
+    console.log('[Cron Tick] Running RSS fetch job...');
+    (results.jobsRun as string[]).push('rssFetch');
 
-      try {
-        // Call the RSS fetch endpoint internally
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        const res = await fetch(`${baseUrl}/api/rss/cron/fetch`, {
-          headers: cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {},
-        });
-        results.rssFetch = await res.json();
-      } catch (error) {
-        results.rssFetch = { error: error instanceof Error ? error.message : 'Failed' };
-      }
-    } else {
-      results.jobsSkipped = [...(results.jobsSkipped as string[]), 'rssFetch'];
+    try {
+      const res = await fetch(`${baseUrl}/api/rss/cron/fetch`, {
+        headers: cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {},
+      });
+      results.rssFetch = await res.json();
+    } catch (error) {
+      results.rssFetch = { error: error instanceof Error ? error.message : 'Failed' };
     }
 
     // ═══════════════════════════════════════════════════════════════════
     // Cover Backfill Job
     // ═══════════════════════════════════════════════════════════════════
-    if (shouldRunJob('coverBackfill', JOB_SCHEDULE.coverBackfill)) {
-      console.log('[Cron Tick] Running cover backfill job...');
-      results.jobsRun = [...(results.jobsRun as string[]), 'coverBackfill'];
+    console.log('[Cron Tick] Running cover backfill job...');
+    (results.jobsRun as string[]).push('coverBackfill');
 
-      try {
-        // Call the cover backfill endpoint internally
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        const res = await fetch(`${baseUrl}/api/covers/backfill`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {}),
-          },
-          body: JSON.stringify({ limit: 20, priorityFirst: true }),
-        });
-        results.coverBackfill = await res.json();
-      } catch (error) {
-        results.coverBackfill = { error: error instanceof Error ? error.message : 'Failed' };
-      }
-    } else {
-      results.jobsSkipped = [...(results.jobsSkipped as string[]), 'coverBackfill'];
+    try {
+      const res = await fetch(`${baseUrl}/api/covers/backfill`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {}),
+        },
+        body: JSON.stringify({ limit: 20, priorityFirst: true }),
+      });
+      results.coverBackfill = await res.json();
+    } catch (error) {
+      results.coverBackfill = { error: error instanceof Error ? error.message : 'Failed' };
     }
 
     const duration = Date.now() - startTime;
