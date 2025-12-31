@@ -1,16 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/poll",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/rss/cron/fetch",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/covers/backfill",
-      "schedule": "0 6 * * *"
+      "path": "/api/cron/tick",
+      "schedule": "0 * * * *"
     }
   ]
 }
