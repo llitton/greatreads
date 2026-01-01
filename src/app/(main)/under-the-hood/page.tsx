@@ -4,10 +4,10 @@ import Link from 'next/link';
 
 export default function UnderTheHoodPage() {
   return (
-    <div className="max-w-xl mx-auto px-5 py-8">
+    <div className="max-w-lg mx-auto px-5 py-12">
       {/* Header */}
-      <header className="mb-16">
-        <h1 className="text-2xl font-serif text-[#1f1a17] mb-6">
+      <header className="mb-12">
+        <h1 className="text-2xl font-serif text-[#1f1a17] mb-6 leading-snug">
           How GreatReads decides what&apos;s worth your attention
         </h1>
         <p className="text-[15px] text-neutral-500 leading-relaxed">
@@ -16,111 +16,110 @@ export default function UnderTheHoodPage() {
         </p>
       </header>
 
-      {/* Simple diagram */}
-      <section className="mb-16 text-center">
-        <div className="inline-flex items-baseline gap-8 text-sm">
-          <div>
-            <p className="font-medium text-[#1f1a17]">Signals</p>
-            <p className="text-neutral-400 text-xs mt-1">moment</p>
+      {/* Visual anchor: the diagram */}
+      <section className="mb-16 py-8 border-y border-neutral-100">
+        <div className="flex items-start justify-center gap-6 sm:gap-10">
+          <div className="text-center">
+            <p className="text-base font-medium text-[#1f1a17] mb-1">Signals</p>
+            <p className="text-xs text-neutral-400">moment</p>
           </div>
-          <span className="text-neutral-300">→</span>
-          <div>
-            <p className="font-medium text-[#1f1a17]">My Books</p>
-            <p className="text-neutral-400 text-xs mt-1">choice</p>
+          <span className="text-neutral-200 text-lg mt-1">→</span>
+          <div className="text-center">
+            <p className="text-base font-medium text-[#1f1a17] mb-1">My Books</p>
+            <p className="text-xs text-neutral-400">choice</p>
           </div>
-          <span className="text-neutral-300">→</span>
-          <div>
-            <p className="font-medium text-[#1f1a17]">Canon</p>
-            <p className="text-neutral-400 text-xs mt-1">commitment</p>
+          <span className="text-neutral-200 text-lg mt-1">→</span>
+          <div className="text-center">
+            <p className="text-base font-medium text-[#1f1a17] mb-1">Canon</p>
+            <p className="text-xs text-neutral-400">commitment</p>
           </div>
         </div>
       </section>
 
-      {/* What we deliberately ignore - moved up as a stance */}
-      <section className="mb-16">
-        <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+      {/* What we deliberately ignore - callout block */}
+      <section className="mb-16 -mx-2 px-5 py-6 bg-neutral-50/70 rounded-xl">
+        <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-5">
           What GreatReads deliberately ignores
         </h2>
-        <div className="space-y-3 text-[15px]">
-          <p className="text-neutral-600">
+        <div className="space-y-2.5">
+          <p className="text-[15px] text-neutral-600">
             <span className="text-neutral-400">Popularity</span> — Agreement isn&apos;t trust.
           </p>
-          <p className="text-neutral-600">
+          <p className="text-[15px] text-neutral-600">
             <span className="text-neutral-400">Averages</span> — Averages flatten taste.
           </p>
-          <p className="text-neutral-600">
+          <p className="text-[15px] text-neutral-600">
             <span className="text-neutral-400">Algorithms</span> — Trust isn&apos;t crowdsourced.
           </p>
-          <p className="text-neutral-600">
+          <p className="text-[15px] text-neutral-600">
             <span className="text-neutral-400">Reading streaks</span> — Reading isn&apos;t productivity.
           </p>
         </div>
       </section>
 
+      {/* Divider before mechanics */}
+      <div className="mb-12">
+        <div className="h-px bg-neutral-100" />
+      </div>
+
       {/* The three layers */}
-      <section className="mb-8">
-        <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+      <section className="mb-16">
+        <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
           The three layers
         </h2>
-        <p className="text-sm text-neutral-500 mb-12">
-          Each layer answers a different question. They&apos;re kept separate on purpose.
+        <p className="text-sm text-neutral-500 mb-10">
+          Each answers a different question. They&apos;re kept separate on purpose.
         </p>
 
         {/* Signals */}
-        <div className="mb-12">
+        <div className="mb-10">
           <h3 className="text-lg font-medium text-[#1f1a17] mb-2">Signals</h3>
-          <p className="text-sm text-neutral-500 italic mb-4">
+          <p className="text-sm text-neutral-500 italic mb-3">
             &ldquo;Someone I trust thought this was exceptional.&rdquo;
           </p>
-          <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-            Signals are moments, not commitments. They&apos;re designed to interrupt briefly — and then get out of the way.
-          </p>
-          <p className="text-sm text-neutral-500">
-            A signal appears only when someone in your circle gives a book five stars or adds it to their Top 10.
+          <p className="text-[15px] text-neutral-600 leading-relaxed">
+            Signals are moments, not commitments. They appear when someone in your circle gives a book five stars or adds it to their Top 10 — then get out of the way.
           </p>
         </div>
 
         {/* My Books */}
-        <div className="mb-12">
+        <div className="mb-10">
           <h3 className="text-lg font-medium text-[#1f1a17] mb-2">My Books</h3>
-          <p className="text-sm text-neutral-500 italic mb-4">
+          <p className="text-sm text-neutral-500 italic mb-3">
             &ldquo;This mattered enough to keep.&rdquo;
           </p>
-          <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-            My Books is your personal library. A book enters only if you choose it — by saving a signal, importing your own reads, or adding it manually.
-          </p>
-          <p className="text-sm text-neutral-500">
-            It doesn&apos;t assume you&apos;ll reread it, that it belongs in your canon, or that you owe it a decision.
+          <p className="text-[15px] text-neutral-600 leading-relaxed">
+            Your personal library. A book enters only if you choose it. It doesn&apos;t assume you&apos;ll reread it, that it belongs in your canon, or that you owe it a decision.
           </p>
         </div>
 
-        {/* Canon - given more weight */}
-        <div className="mb-8 py-8 border-y border-neutral-100">
-          <h3 className="text-xl font-medium text-[#1f1a17] mb-3">Canon</h3>
-          <p className="text-sm text-neutral-500 italic mb-6">
+        {/* Canon - heavier treatment */}
+        <div className="pl-4 border-l-2 border-[#1f1a17]/20">
+          <h3 className="text-xl font-medium text-[#1f1a17] mb-2">Canon</h3>
+          <p className="text-sm text-neutral-500 italic mb-4">
             &ldquo;This shaped how I think.&rdquo;
           </p>
           <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-            A book cannot enter your canon unless it already lives in My Books and you&apos;ve written a reflection about why it stayed with you.
-          </p>
-          <p className="text-[15px] text-neutral-600 leading-relaxed mb-6">
-            There are no shortcuts. No rankings. No auto-promotion. Your canon is limited to ten books because identity is limited too.
+            A book cannot enter your canon unless it already lives in My Books and you&apos;ve written a reflection about why it stayed with you. No shortcuts. No auto-promotion.
           </p>
           <p className="text-[15px] text-[#1f1a17] leading-relaxed">
-            Canon is where taste turns into identity.
-            <br />
-            That&apos;s why it&apos;s slow. That&apos;s why it&apos;s limited. That&apos;s why it asks something of you.
+            Canon is where taste turns into identity. That&apos;s why it&apos;s slow. That&apos;s why it&apos;s limited. That&apos;s why it asks something of you.
           </p>
         </div>
       </section>
 
+      {/* Divider */}
+      <div className="mb-12">
+        <div className="h-px bg-neutral-100" />
+      </div>
+
       {/* Why five stars matter */}
-      <section className="mb-16">
+      <section className="mb-12">
         <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
           Why five stars matter here
         </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-3">
-          Five stars here don&apos;t mean &ldquo;I liked this more than average.&rdquo;
+        <p className="text-[15px] text-neutral-600 leading-relaxed mb-2">
+          Five stars don&apos;t mean &ldquo;I liked this more than average.&rdquo;
         </p>
         <p className="text-[15px] text-[#1f1a17] leading-relaxed">
           They mean: &ldquo;I would interrupt someone else&apos;s reading life for this.&rdquo;
@@ -128,40 +127,39 @@ export default function UnderTheHoodPage() {
       </section>
 
       {/* What Stayed means */}
-      <section className="mb-16">
+      <section className="mb-12">
         <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
           What &ldquo;Stayed&rdquo; means
         </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-3">
-          Some books don&apos;t announce themselves right away. They don&apos;t surface as signals. They don&apos;t rush into canon.
+        <p className="text-[15px] text-neutral-600 leading-relaxed mb-2">
+          Some books don&apos;t announce themselves right away. They don&apos;t rush into canon.
         </p>
-        <p className="text-[15px] text-[#1f1a17] leading-relaxed mb-3">
+        <p className="text-[15px] text-[#1f1a17] leading-relaxed">
           They linger.
-        </p>
-        <p className="text-sm text-neutral-500">
-          Stayed exists for books that keep returning to your thoughts — driven by reflection and time, not ratings or recency.
         </p>
       </section>
 
       {/* Why quiet */}
-      <section className="mb-16">
+      <section className="mb-12">
         <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">
           Why the app feels quiet
         </h2>
-        <p className="text-[15px] text-neutral-600 leading-relaxed mb-4">
-          GreatReads is designed to allow inaction. Signals expire. Nothing auto-adds to your library. Canon changes require deliberate replacement.
-        </p>
-        <p className="text-sm text-neutral-500">
-          You&apos;re never asked to keep up. If a book belongs, it will still belong later.
+        <p className="text-[15px] text-neutral-600 leading-relaxed">
+          Signals expire. Nothing auto-adds. Canon requires deliberate replacement. If a book belongs, it will still belong later.
         </p>
       </section>
 
+      {/* Divider */}
+      <div className="mb-12">
+        <div className="h-px bg-neutral-100" />
+      </div>
+
       {/* The rule */}
       <section className="mb-16">
-        <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-6">
+        <h2 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-5">
           The rule everything follows
         </h2>
-        <div className="space-y-2 mb-6">
+        <div className="space-y-1.5 mb-5">
           <p className="text-[15px] text-[#1f1a17]">
             <span className="font-medium">Signals</span> are suggestions.
           </p>
@@ -173,13 +171,13 @@ export default function UnderTheHoodPage() {
           </p>
         </div>
         <p className="text-sm text-neutral-500">
-          Every screen, rule, and constraint exists to keep those three from bleeding into each other.
+          Every screen exists to keep those three from bleeding into each other.
         </p>
       </section>
 
-      {/* Footer */}
-      <footer className="pt-8 border-t border-neutral-100">
-        <p className="text-[15px] text-neutral-500 leading-relaxed mb-8">
+      {/* Footer - clear visual full stop */}
+      <footer className="pt-10 border-t border-neutral-100">
+        <p className="text-[15px] text-[#1f1a17] leading-relaxed mb-10">
           If a book appears here, it earned its place — slowly, deliberately, and without needing consensus.
         </p>
         <Link
