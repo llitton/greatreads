@@ -190,7 +190,7 @@ export default function MyBooksPage() {
           My Books
         </h1>
         <p className="text-[15px] text-neutral-500 leading-relaxed max-w-lg">
-          Which books belong in your canon? Add a reflection to make them canon-ready.
+          Books you&apos;ve claimed and want to return to.
         </p>
       </header>
 
@@ -207,14 +207,14 @@ export default function MyBooksPage() {
         <section className="mb-16">
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide">
-              Canon-ready
+              Ready for canon
             </h2>
             <span className="text-xs text-neutral-300">
               {canonReady.length} book{canonReady.length !== 1 ? 's' : ''}
             </span>
           </div>
           <p className="text-xs text-neutral-400 mb-6">
-            You&apos;ve reflected on these. Ready when you are.
+            Books you&apos;ve reflected on. Promote when ready.
           </p>
 
           <div className="space-y-3">
@@ -234,20 +234,20 @@ export default function MyBooksPage() {
 
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION 2: ALL FIVE-STAR BOOKS
-          Books without reflections. Need reflection before canon.
+          Books you've rated 5 stars but haven't reflected on yet.
       ═══════════════════════════════════════════════════════════════════ */}
       {allFiveStar.length > 0 && (
         <section className="mb-16">
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wide">
-              All five-star books
+              Five-star books
             </h2>
             <span className="text-xs text-neutral-300">
               {allFiveStar.length} book{allFiveStar.length !== 1 ? 's' : ''}
             </span>
           </div>
           <p className="text-xs text-neutral-400 mb-6">
-            Add a reflection to make them canon-ready.
+            Books you loved. Reflect on them when they keep coming back to you.
           </p>
 
           <div className="space-y-3">
@@ -349,18 +349,17 @@ function TrueEmptyState() {
     <div className="bg-[#fdfcfa] border border-[#f0ebe3] rounded-2xl p-10 text-center">
       <div className="max-w-sm mx-auto">
         <h3 className="text-lg font-medium text-[#1f1a17] mb-3">
-          Your library starts here
+          This is where your books live
         </h3>
         <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
-          Import your reading history from Goodreads, or wait for
-          recommendations from people you trust.
+          Save a book from a signal, or import your reading history to begin.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/import">
-            <Button>Import from Goodreads</Button>
-          </Link>
           <Link href="/feed">
-            <Button variant="secondary">See incoming signals</Button>
+            <Button>View signals</Button>
+          </Link>
+          <Link href="/import">
+            <Button variant="secondary">Import reading history</Button>
           </Link>
         </div>
       </div>
@@ -498,13 +497,16 @@ function FiveStarCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div>
-            <h3 className="font-medium text-[#1f1a17]">
-              {book.title}
-            </h3>
-            {book.author && (
-              <p className="text-sm text-neutral-500">{book.author}</p>
-            )}
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-medium text-[#1f1a17]">
+                {book.title}
+              </h3>
+              {book.author && (
+                <p className="text-sm text-neutral-500">{book.author}</p>
+              )}
+            </div>
+            <span className="text-amber-500 text-sm">★★★★★</span>
           </div>
 
           {/* Source attribution */}
@@ -514,13 +516,13 @@ function FiveStarCard({
             </p>
           )}
 
-          {/* Prompt to add reflection */}
-          <div className="mt-4">
+          {/* Quiet action - only on hover */}
+          <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={onAddReflection}
-              className="px-4 py-1.5 text-xs font-medium text-[#1f1a17] bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
+              className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
             >
-              Add reflection
+              Add reflection →
             </button>
           </div>
         </div>

@@ -52,39 +52,36 @@ interface Source {
 // The right rail is always present, but adapts its message per page
 const CONTEXTUAL_PAGES: Record<string, { title: string; description: string; tip?: string }> = {
   '/import': {
-    title: 'Signals start here',
-    description: "We'll look for five-star books and ignore everything else.",
-    tip: 'Your import history becomes visible to people who follow you.',
+    title: 'How imports work',
+    description: 'We use five-star books to seed your library. Nothing is shared unless you choose to share it.',
   },
   '/settings': {
-    title: 'Signals are shaped by trust',
-    description: 'Changes here affect what appears in your feed.',
+    title: 'Your preferences',
+    description: 'Control how and when GreatReads interrupts you.',
   },
   '/under-the-hood': {
-    title: 'Signal weights explained',
+    title: 'How signals work',
     description: 'These rules explain why some books surface and most do not.',
   },
   '/reflections': {
-    title: 'Books that stayed',
-    description: 'This page is for quiet reflection. Signals will wait.',
+    title: 'Quiet reflection',
+    description: 'This page is for thinking. Signals will wait.',
   },
   '/stayed': {
     title: 'Books that stayed',
-    description: 'This page is for quiet reflection. Signals will wait.',
-    tip: 'Some books linger. Others return when you least expect them.',
+    description: 'This space is for quiet return. Signals can wait.',
   },
   '/top10': {
-    title: 'Your personal canon',
-    description: 'Curating your Top 10 is a different kind of thinking.',
+    title: 'Your canon',
+    description: 'These books shape how recommendations are weighted.',
   },
   '/my-books': {
-    title: 'Canon vs. five-star',
-    description: 'Five-star books are ones you loved. Canon books are the ones that stayed with you—they changed how you see things.',
-    tip: 'Promote books to your canon when they keep coming back to you.',
+    title: 'Your library',
+    description: 'Five-star books are ones you loved. Canon books changed how you see things.',
   },
   '/circle': {
-    title: 'Managing your circle',
-    description: 'Add, remove, or troubleshoot your trusted sources here.',
+    title: 'Your circle',
+    description: 'A small circle keeps recommendations meaningful. You can add, mute, or fix connections at any time.',
   },
 };
 
@@ -300,24 +297,17 @@ export function RightSidebar() {
               className="mt-3"
             />
 
-            {/* Mark all seen + last checked */}
-            <div className="flex items-center justify-between mt-2">
-              {unseenCount > 0 && filter === 'new' ? (
+            {/* Mark all seen - only when needed */}
+            {unseenCount > 0 && filter === 'new' && (
+              <div className="mt-2">
                 <button
                   onClick={handleMarkAllSeen}
                   className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
                 >
                   Mark all seen
                 </button>
-              ) : (
-                <span />
-              )}
-              {lastChecked && !loading && (
-                <span className="text-[10px] text-neutral-300">
-                  Checked {formatLastChecked()}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -415,35 +405,28 @@ export function RightSidebar() {
             <p className="text-sm font-medium text-neutral-500 mb-2">
               Nothing new right now.
             </p>
-            <p className="text-xs text-neutral-400 leading-relaxed mb-3">
-              We&apos;ll show books here when someone finishes a five-star read.
+            <p className="text-xs text-neutral-400 leading-relaxed mb-4">
+              Books appear when someone you trust finishes a five-star read.
             </p>
-
-            {/* Last checked status - builds trust */}
-            {lastChecked && (
-              <p className="text-[10px] text-neutral-300 mb-5">
-                Last checked {formatLastChecked()}
-              </p>
-            )}
 
             {/* If there are sources with issues, show ONE line linking to /circle */}
             {hasErrorSources && (
               <a
                 href="/circle"
-                className="block p-3 bg-amber-50 rounded-xl border border-amber-100 mb-5 hover:bg-amber-100/50 transition-colors"
+                className="block p-3 bg-amber-50 rounded-xl border border-amber-100 mb-4 hover:bg-amber-100/50 transition-colors"
               >
                 <p className="text-xs text-amber-700">
-                  Some sources need attention. <span className="underline">Manage your circle →</span>
+                  Some sources need attention. <span className="underline">Manage →</span>
                 </p>
               </a>
             )}
 
-            <button
-              onClick={() => setShowManageSources(true)}
+            <a
+              href="/circle"
               className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
             >
-              Add another source
-            </button>
+              Add someone to your circle
+            </a>
           </div>
         ) : (
           /* STATE C: Active signals */

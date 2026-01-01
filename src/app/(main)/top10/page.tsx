@@ -91,6 +91,9 @@ export default function Top10Page() {
   // Revisit mode - when user comes from My Books with canon full
   const [revisitMode, setRevisitMode] = useState(false);
 
+  // Edit mode - controls visibility of drag handles and remove buttons
+  const [isEditMode, setIsEditMode] = useState(false);
+
   // Request form state
   const [requestEmail, setRequestEmail] = useState('');
   const [requestName, setRequestName] = useState('');
@@ -376,19 +379,11 @@ export default function Top10Page() {
         </p>
 
         <h1 className="text-3xl font-serif font-semibold text-[#1f1a17] mb-3">
-          Mark&apos;s Top 10
+          Ten books that shaped how you see the world
         </h1>
 
-        <p className="text-[17px] leading-relaxed text-neutral-500 max-w-lg mb-2">
-          The books that made you who you are.
-        </p>
-
-        <p className="text-sm font-medium text-neutral-400 mb-2">
-          Ten books. Ranked. No ties.
-        </p>
-
-        <p className="text-sm text-neutral-400 italic mb-8">
-          Your canon can change as you do.
+        <p className="text-[17px] leading-relaxed text-neutral-500 max-w-lg mb-6">
+          This list isn&apos;t about favorites. It&apos;s about influence.
         </p>
 
         {/* Actions - evolving CTA */}
@@ -415,9 +410,15 @@ export default function Top10Page() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-5">
-            <Button onClick={() => setShowAddBook(true)} variant="secondary">
-              Revisit your canon
-            </Button>
+            {isEditMode ? (
+              <Button onClick={() => setIsEditMode(false)} variant="secondary">
+                Done editing
+              </Button>
+            ) : (
+              <Button onClick={() => setIsEditMode(true)} variant="secondary">
+                Revisit canon
+              </Button>
+            )}
             <button
               onClick={() => setShowRequestForm(true)}
               className="text-sm text-neutral-500 hover:text-[#1f1a17] transition-colors"
@@ -458,16 +459,25 @@ export default function Top10Page() {
       {/* List or Preview */}
       {hasBooks ? (
         <>
-          {/* Progress indicator */}
-          <div className="mb-5 flex items-center justify-between">
-            <p className="text-sm text-neutral-500">
-              {topTen!.items.length} of 10 · <span className="text-neutral-400 italic">Your canon is taking shape</span>
-            </p>
-            <p className="text-xs text-neutral-300">
-              You can reorder anytime
-            </p>
-          </div>
-          <Top10List items={topTen!.items} onReorder={handleReorder} onRemove={handleRemove} />
+          {/* Edit mode banner */}
+          {isEditMode && (
+            <div className="mb-5 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+              <p className="text-sm text-amber-800">
+                Editing mode · Drag to reorder, or remove books that no longer belong.
+              </p>
+            </div>
+          )}
+
+          {/* Progress indicator - only when not complete */}
+          {topTen!.items.length < 10 && (
+            <div className="mb-5 flex items-center justify-between">
+              <p className="text-sm text-neutral-500">
+                {topTen!.items.length} of 10 · <span className="text-neutral-400 italic">Your canon is taking shape</span>
+              </p>
+            </div>
+          )}
+
+          <Top10List items={topTen!.items} onReorder={handleReorder} onRemove={handleRemove} isEditMode={isEditMode || topTen!.items.length < 10} />
 
           {/* Next invitation - one at a time, not all at once */}
           {topTen!.items.length < 10 && (
@@ -617,9 +627,7 @@ export default function Top10Page() {
       {/* Footer - emotional closure */}
       <footer className="mt-8 pt-8 border-t border-neutral-50 text-center">
         <p className="text-sm text-neutral-300 italic leading-relaxed">
-          These are the books you carry with you.
-          <br />
-          They don&apos;t need to be finished.
+          Your canon can change. It usually does.
         </p>
       </footer>
 

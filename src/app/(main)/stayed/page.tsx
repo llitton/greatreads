@@ -229,39 +229,50 @@ export default function StayedPage() {
   if (books.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16">
-        <header className="mb-12 text-center">
+        <header className="mb-12">
           <h1 className="text-2xl font-semibold text-[#1f1a17] mb-3">
             Stayed
           </h1>
-          <p className="text-[15px] text-neutral-500 leading-relaxed">
-            Books that kept returning to me.
+          <p className="text-[15px] text-neutral-500 leading-relaxed mb-2">
+            Books that return to you, unprompted.
+          </p>
+          <p className="text-sm text-neutral-400 leading-relaxed">
+            This page gathers books you&apos;ve reflected on more than once—or kept thinking about long after you finished.
           </p>
         </header>
 
-        <div className="bg-[#fdfcfa] border border-[#f0ebe3] rounded-2xl p-12 text-center">
-          <div className="max-w-sm mx-auto">
-            <h3 className="text-lg font-medium text-[#1f1a17] mb-4">
+        <div className="bg-[#fdfcfa] border border-[#f0ebe3] rounded-2xl p-10 mb-8">
+          <div className="max-w-sm mx-auto text-center">
+            <h3 className="text-lg font-medium text-[#1f1a17] mb-3">
               Nothing has stayed yet
             </h3>
-            <p className="text-sm text-neutral-500 mb-3 leading-relaxed">
-              And that&apos;s okay.
+            <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
+              And that&apos;s normal.
+            </p>
+            <p className="text-sm text-neutral-400 mb-6 leading-relaxed">
+              Some books land all at once.
+              <br />
+              Others return slowly, when you&apos;re ready for them.
             </p>
             <p className="text-sm text-neutral-400 mb-8 leading-relaxed">
-              Some books linger immediately.
-              <br />
-              Others take time—or only return when you least expect them.
-            </p>
-            <p className="text-sm text-neutral-400 mb-8">
-              When a book keeps coming back to you, it will appear here.
-              <br />
-              You can also add one yourself.
+              When you revisit a reflection, or write about the same book again later, it will begin to appear here.
             </p>
 
-            <Link href="/my-books">
-              <Button>Add a book that stayed</Button>
+            <Link href="/reflections">
+              <Button>Revisit a past reflection</Button>
             </Link>
           </div>
         </div>
+
+        {/* Quiet manual add - secondary */}
+        <p className="text-center">
+          <Link
+            href="/my-books"
+            className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+          >
+            Or add one manually
+          </Link>
+        </p>
       </div>
     );
   }
@@ -275,32 +286,17 @@ export default function StayedPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER
       ═══════════════════════════════════════════════════════════════════ */}
-      <header className="mb-8">
+      <header className="mb-10">
         <h1 className="text-2xl font-semibold text-[#1f1a17] mb-3">
           Stayed
         </h1>
-        <p className="text-[15px] text-neutral-500 leading-relaxed">
-          Books that kept returning to me.
+        <p className="text-[15px] text-neutral-500 leading-relaxed mb-2">
+          Books that return to you, unprompted.
         </p>
-        <p className="text-xs text-neutral-400 mt-2">
-          This is a quiet place. There&apos;s no ranking here.
-          Just the books you kept thinking about, and why.
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          These books surfaced here because you reflected on them more than once, or returned to them after time passed.
         </p>
       </header>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION INTRO (once)
-      ═══════════════════════════════════════════════════════════════════ */}
-      <div className="mb-10 p-6 bg-neutral-50 rounded-2xl border border-black/5">
-        <p className="text-sm text-neutral-600 leading-relaxed">
-          Some books don&apos;t resolve themselves when you finish them.
-          <br />
-          They linger. They resurface. They change shape over time.
-        </p>
-        <p className="text-sm text-neutral-500 mt-3">
-          This page holds those books—whether or not they belong in your canon.
-        </p>
-      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           REVISIT A THOUGHT (gentle resurfacing)
@@ -359,12 +355,18 @@ export default function StayedPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           FOOTER
       ═══════════════════════════════════════════════════════════════════ */}
-      <footer className="mt-16 pt-8 border-t border-black/5 text-center">
+      <footer className="mt-16 pt-8 border-t border-black/5 text-center space-y-3">
+        <Link
+          href="/reflections"
+          className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors block"
+        >
+          Revisit past reflections
+        </Link>
         <Link
           href="/my-books"
-          className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
+          className="text-xs text-neutral-300 hover:text-neutral-500 transition-colors block"
         >
-          Add a book that stayed
+          Add one manually
         </Link>
       </footer>
     </div>

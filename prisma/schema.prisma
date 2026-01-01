@@ -495,6 +495,30 @@ model GoodreadsImport {
 // RSS Inbox System
 // ═══════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════
+// Source Status Taxonomy (only 3 states, no ambiguity)
+// ═══════════════════════════════════════════════════════════════════
+
+enum SourceStatus {
+  ACTIVE           // Signals are flowing normally
+  DELAYED          // Temporary issues, retrying automatically
+  NEEDS_ATTENTION  // Requires user action to fix
+}
+
+enum SourceHealthReason {
+  NONE                    // No issues
+  INVALID_INPUT           // User pasted something we can't parse
+  UNAUTHORIZED            // 401/403 (private shelf, bad token)
+  NOT_FOUND               // 404 (user/shelf doesn't exist)
+  RATE_LIMITED            // 429
+  TEMPORARY_REMOTE_ERROR  // 5xx from remote
+  TIMEOUT                 // Request timed out
+  PARSE_ERROR             // Invalid XML or malformed feed
+  NOT_FEED                // Response is HTML, not RSS/Atom
+  NETWORK_ERROR           // Connection issues
+}
+
+// Legacy enums (kept for migration compatibility)
 enum RssSourceStatus {
   DRAFT       // Created, not yet validated
   VALIDATING  // One-off fetch to confirm URL + parseability
@@ -531,7 +555,14 @@ model RssSource {
   description   String?   @db.Text
   siteUrl       String?   @db.Text
 
-  // State machine
+  // Canonical identity for deduplication (e.g., "goodreads:66205797" or "rss:https://...")
+  identityKey   String?
+
+  // New simplified status (3-state taxonomy)
+  sourceStatus        SourceStatus       @default(DELAYED)
+  healthReason        SourceHealthReason @default(NONE)
+
+  // Legacy state machine (kept for migration)
   status              RssSourceStatus   @default(DRAFT)
   failureReasonCode   FailureReasonCode @default(NONE)
 
@@ -552,7 +583,10 @@ model RssSource {
   // Dedupe tracking
   lastSeenItemKey     String?     // For dedupe + "no items yet" logic
 
-  // Legacy field (deprecated, use status instead)
+  // Control
+  isEnabled     Boolean   @default(true)
+
+  // Legacy field (deprecated)
   isActive      Boolean   @default(true)
 
   createdAt     DateTime  @default(now())
@@ -561,9 +595,12 @@ model RssSource {
   items         RssItem[]
 
   @@unique([userId, url])
+  @@unique([userId, identityKey])
+  @@index([userId, sourceStatus])
   @@index([userId, status])
   @@index([status, nextAttemptAt])
   @@index([personId])
+  @@index([userId, isEnabled, nextAttemptAt])
 }
 
 model RssItem {

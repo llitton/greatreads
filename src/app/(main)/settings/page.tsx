@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { TrustedSourcesSummary } from '@/components/settings/trusted-sources-summary';
+import Link from 'next/link';
 
 interface UserSettings {
   id: string;
@@ -12,6 +12,10 @@ interface UserSettings {
   phone: string | null;
   notifyEmail: boolean;
   notifySms: boolean;
+}
+
+interface CircleSummary {
+  count: number;
 }
 
 // Toggle switch component
@@ -47,6 +51,7 @@ function Toggle({
 export default function SettingsPage() {
   const router = useRouter();
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [circleSummary, setCircleSummary] = useState<CircleSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -62,6 +67,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings();
+    fetchCircleSummary();
   }, []);
 
   const fetchSettings = async () => {
@@ -77,6 +83,16 @@ export default function SettingsPage() {
       console.error('Failed to fetch settings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCircleSummary = async () => {
+    try {
+      const res = await fetch('/api/circle');
+      const data = await res.json();
+      setCircleSummary({ count: data.people?.length || 0 });
+    } catch (error) {
+      console.error('Failed to fetch circle:', error);
     }
   };
 
@@ -163,90 +179,71 @@ export default function SettingsPage() {
 
       <div className="space-y-16">
         {/* ═══════════════════════════════════════════════════════════════════
-            PERSPECTIVE - Who's browsing and who they trust
+            PERSPECTIVE - Just identity, no source management
         ═══════════════════════════════════════════════════════════════════ */}
         <section>
           <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-8">
             Perspective
           </h2>
 
-          <div className="space-y-8">
-            {/* Browsing as */}
-            <div>
-              <p className="text-xs text-neutral-400 mb-2">Browsing as</p>
-              {!editingName ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-lg font-medium text-[#1f1a17]">
-                      {name || 'Mark'}
-                    </p>
-                    <p className="text-sm text-neutral-400">
-                      The person discovering and curating.
-                    </p>
-                  </div>
+          <div>
+            <p className="text-xs text-neutral-400 mb-2">Browsing as</p>
+            {!editingName ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-medium text-[#1f1a17]">
+                    {name || 'Mark'}
+                  </p>
+                  <p className="text-sm text-neutral-400">
+                    The person discovering and curating.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEditingName(true)}
+                  className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                >
+                  Change
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Name"
+                  autoFocus
+                  className="w-full h-11 px-3 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
+                />
+                <div className="flex gap-2">
                   <button
-                    onClick={() => setEditingName(true)}
-                    className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                    onClick={handleNameSave}
+                    className="px-3 py-2 text-sm font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] transition-colors"
                   >
-                    Change
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingName(false);
+                      setName(settings?.name || '');
+                    }}
+                    className="px-3 py-2 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+                  >
+                    Cancel
                   </button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Name"
-                    autoFocus
-                    className="w-full h-11 px-3 text-[15px] bg-neutral-50 border border-black/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1f1a17]/10"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleNameSave}
-                      className="px-3 py-2 text-sm font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingName(false);
-                        setName(settings?.name || '');
-                      }}
-                      className="px-3 py-2 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Separator */}
-            <div className="h-px bg-neutral-100" />
-
-            {/* Trusted sources */}
-            <div>
-              <p className="text-xs text-neutral-400 mb-2">Recommendations come from</p>
-              <TrustedSourcesSummary
-                showExpanded={true}
-                onManage={() => router.push('/feed')}
-              />
-            </div>
+              </div>
+            )}
           </div>
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            SIGNALS - Commitments, not toggles
+            NOTIFICATIONS - When to interrupt
         ═══════════════════════════════════════════════════════════════════ */}
         <section>
           <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-8">
-            How you want to be interrupted
+            When should we interrupt you?
           </h2>
-
-          <p className="text-sm text-neutral-500 mb-5">
-            When someone you trust rates a book 5 stars, you&apos;ll see it in {name || 'Mark'}&apos;s feed.
-          </p>
 
           <div className="space-y-5">
             {/* Five-star notifications */}
@@ -257,7 +254,7 @@ export default function SettingsPage() {
                     Five-star notifications
                   </p>
                   <p className="text-sm text-neutral-500 leading-relaxed">
-                    Get notified when your trusted sources truly love something.
+                    Show books only when someone you trust truly loved them.
                   </p>
                 </div>
                 <Toggle
@@ -339,6 +336,41 @@ export default function SettingsPage() {
                 </div>
               )}
             </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            YOUR CIRCLE - Link only, no inline management
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-8">
+            Your trusted sources
+          </h2>
+
+          <div className="p-5 bg-[#fdfcfa] rounded-2xl border border-[#f0ebe3]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[15px] font-medium text-[#1f1a17] mb-1">
+                  Your circle
+                  {circleSummary && circleSummary.count > 0 && (
+                    <span className="text-neutral-400 font-normal ml-1">
+                      ({circleSummary.count})
+                    </span>
+                  )}
+                </p>
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Recommendations are shaped by the people you trust.
+                </p>
+              </div>
+              <Link href="/circle">
+                <Button variant="secondary" size="sm">
+                  Manage
+                </Button>
+              </Link>
+            </div>
+            <p className="text-xs text-neutral-400 mt-3">
+              Changes here affect what appears in your feed.
+            </p>
           </div>
         </section>
 

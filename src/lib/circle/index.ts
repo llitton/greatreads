@@ -15,16 +15,21 @@ import { prisma } from '@/lib/prisma';
 // Types
 // ═══════════════════════════════════════════════════════════════════
 
-export type PersonStatus = 'ACTIVE' | 'QUIET' | 'WARNING' | 'PAUSED' | 'MUTED';
+// Simplified 3-state taxonomy (no ambiguity)
+export type SourceStatusSimple = 'ACTIVE' | 'DELAYED' | 'NEEDS_ATTENTION';
+
+// Person status is derived from their sources + mute state
+export type PersonStatus = 'ACTIVE' | 'DELAYED' | 'NEEDS_ATTENTION' | 'MUTED';
 
 export interface CircleSource {
   id: string;
   type: 'RSS' | 'GOODREADS' | 'IMPORT';
   url: string | null;
-  status: string;
-  failureReasonCode: string | null;
+  status: SourceStatusSimple;
+  healthReason: string | null;
   lastSuccessAt: Date | null;
   lastAttemptAt: Date | null;
+  checkedAgo: string | null; // "14h ago", "3 days ago"
 }
 
 export interface CirclePerson {
@@ -66,42 +71,65 @@ function inferSourceType(url: string | null): 'RSS' | 'GOODREADS' | 'IMPORT' {
 }
 
 /**
+ * Map raw DB status to simplified 3-state taxonomy
+ * - ACTIVE: Signals flowing normally
+ * - DELAYED: Temporary issues, retrying automatically
+ * - NEEDS_ATTENTION: Requires user action
+ */
+function mapToSourceStatus(rawStatus: string): SourceStatusSimple {
+  switch (rawStatus) {
+    case 'ACTIVE':
+      return 'ACTIVE';
+    case 'BACKOFF':
+    case 'WARNING':
+    case 'DRAFT':
+      return 'DELAYED';
+    case 'FAILED':
+    case 'PAUSED':
+    case 'DISABLED':
+    default:
+      return 'NEEDS_ATTENTION';
+  }
+}
+
+/**
+ * Format time ago for display ("14h ago", "3 days ago")
+ */
+function formatCheckedAgo(date: Date | null): string | null {
+  if (!date) return null;
+
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+
+  if (hours < 1) return 'just now';
+  if (hours < 24) return `${hours}h ago`;
+  if (days === 1) return '1 day ago';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  return `${Math.floor(days / 30)} months ago`;
+}
+
+/**
  * Compute person status from their sources
- * Priority: MUTED > ACTIVE > WARNING > PAUSED > QUIET
+ * Simplified 3-state: ACTIVE > DELAYED > NEEDS_ATTENTION (plus MUTED override)
  */
 function computePersonStatus(
-  sources: Array<{ status: string; lastSuccessAt: Date | null }>,
-  isMuted: boolean,
-  lastSignalAt: Date | null
+  sources: Array<{ status: SourceStatusSimple }>,
+  isMuted: boolean
 ): PersonStatus {
   if (isMuted) return 'MUTED';
+  if (sources.length === 0) return 'NEEDS_ATTENTION';
 
-  const enabledSources = sources.filter(
-    (s) => s.status !== 'PAUSED' && s.status !== 'DISABLED'
-  );
+  // Person inherits best status from their sources
+  const hasActive = sources.some((s) => s.status === 'ACTIVE');
+  if (hasActive) return 'ACTIVE';
 
-  if (enabledSources.length === 0) return 'PAUSED';
+  const hasDelayed = sources.some((s) => s.status === 'DELAYED');
+  if (hasDelayed) return 'DELAYED';
 
-  const hasActive = enabledSources.some((s) => s.status === 'ACTIVE');
-  const hasWarning = enabledSources.some(
-    (s) => s.status === 'WARNING' || s.status === 'BACKOFF'
-  );
-  const hasFailed = enabledSources.some((s) => s.status === 'FAILED');
-
-  if (hasActive) {
-    // Check if quiet (no signals in 90 days)
-    if (lastSignalAt) {
-      const daysSinceSignal = Math.floor(
-        (Date.now() - lastSignalAt.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (daysSinceSignal > 90) return 'QUIET';
-    }
-    return 'ACTIVE';
-  }
-
-  if (hasWarning || hasFailed) return 'WARNING';
-
-  return 'QUIET';
+  return 'NEEDS_ATTENTION';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -152,25 +180,27 @@ export async function getCirclePeople(userId: string): Promise<CirclePerson[]> {
       const person = m.person;
       const isMuted = m.mutedAt !== null;
 
-      // Combine all sources for this person
+      // Combine all sources for this person with normalized status
       const sources: CircleSource[] = [
         ...person.rssSources.map((s) => ({
           id: s.id,
           type: inferSourceType(s.url),
           url: s.url,
-          status: s.status,
-          failureReasonCode: s.failureReasonCode,
+          status: mapToSourceStatus(s.status),
+          healthReason: s.failureReasonCode,
           lastSuccessAt: s.lastSuccessAt,
           lastAttemptAt: s.lastAttemptAt,
+          checkedAgo: formatCheckedAgo(s.lastAttemptAt),
         })),
         ...person.friendSources.map((s) => ({
           id: s.id,
           type: (s.sourceType === 'import' ? 'IMPORT' : 'GOODREADS') as 'IMPORT' | 'GOODREADS',
           url: s.rssUrl,
-          status: s.active ? 'ACTIVE' : 'PAUSED',
-          failureReasonCode: null,
+          status: mapToSourceStatus(s.active ? 'ACTIVE' : 'PAUSED'),
+          healthReason: null,
           lastSuccessAt: s.lastFetchedAt,
           lastAttemptAt: s.lastFetchedAt,
+          checkedAgo: formatCheckedAgo(s.lastFetchedAt),
         })),
       ];
 
@@ -213,12 +243,8 @@ export async function getCirclePeople(userId: string): Promise<CirclePerson[]> {
       const lastSignalBookTitle = lastEvent?.book?.title || null;
 
       const status = computePersonStatus(
-        sources.map((s) => ({
-          status: s.status,
-          lastSuccessAt: s.lastSuccessAt,
-        })),
-        isMuted,
-        lastSignalAt
+        sources.map((s) => ({ status: s.status })),
+        isMuted
       );
 
       return {
@@ -278,13 +304,13 @@ export async function getCircleSummary(userId: string): Promise<CircleSummary> {
 
 /**
  * Get circle people names for inline display (e.g., "Ken · Laura · Mom")
- * Returns only active/warning people, deduped by person
+ * Returns only non-muted people, deduped by person
  */
 export async function getCircleNames(userId: string): Promise<string[]> {
   const people = await getCirclePeople(userId);
 
   return people
-    .filter((p) => p.status !== 'MUTED' && p.status !== 'PAUSED')
+    .filter((p) => p.status !== 'MUTED')
     .map((p) => p.displayName);
 }
 

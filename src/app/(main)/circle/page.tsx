@@ -16,19 +16,17 @@ interface CircleData {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Status Helpers
+// Status Helpers - 3-state taxonomy (ACTIVE, DELAYED, NEEDS_ATTENTION)
 // ═══════════════════════════════════════════════════════════════════
 
 function getStatusLabel(status: PersonStatus): string {
   switch (status) {
     case 'ACTIVE':
       return 'Active';
-    case 'QUIET':
-      return 'Quiet';
-    case 'WARNING':
+    case 'DELAYED':
+      return 'Delayed';
+    case 'NEEDS_ATTENTION':
       return 'Needs attention';
-    case 'PAUSED':
-      return 'Paused';
     case 'MUTED':
       return 'Muted';
   }
@@ -38,12 +36,10 @@ function getStatusVariant(status: PersonStatus): 'active' | 'new' | 'danger' | '
   switch (status) {
     case 'ACTIVE':
       return 'active';
-    case 'QUIET':
-      return 'muted';
-    case 'WARNING':
+    case 'DELAYED':
       return 'new'; // amber/warning color
-    case 'PAUSED':
-      return 'muted';
+    case 'NEEDS_ATTENTION':
+      return 'danger';
     case 'MUTED':
       return 'muted';
   }
@@ -53,12 +49,10 @@ function getStatusDescription(status: PersonStatus): string {
   switch (status) {
     case 'ACTIVE':
       return 'Signals are flowing normally.';
-    case 'QUIET':
-      return 'No five-star reads recently.';
-    case 'WARNING':
-      return "We're having trouble checking one source.";
-    case 'PAUSED':
-      return 'All sources are paused.';
+    case 'DELAYED':
+      return 'Temporary issues, retrying automatically.';
+    case 'NEEDS_ATTENTION':
+      return 'Fix required to resume signals.';
     case 'MUTED':
       return "You won't be interrupted by this person.";
   }
@@ -134,6 +128,8 @@ function PersonCard({
   onMute: () => void;
   onRemove: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="bg-white rounded-xl border border-black/5 p-5">
       <div className="flex items-start gap-4">
@@ -142,13 +138,64 @@ function PersonCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-[#1f1a17] truncate">
-              {person.displayName}
-            </h3>
-            <StatusPill variant={getStatusVariant(person.status)}>
-              {getStatusLabel(person.status)}
-            </StatusPill>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="font-semibold text-[#1f1a17] truncate">
+                {person.displayName}
+              </h3>
+              <StatusPill variant={getStatusVariant(person.status)}>
+                {getStatusLabel(person.status)}
+              </StatusPill>
+            </div>
+
+            {/* Kebab menu */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="3" r="1.5" />
+                  <circle cx="8" cy="8" r="1.5" />
+                  <circle cx="8" cy="13" r="1.5" />
+                </svg>
+              </button>
+
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl border border-black/10 shadow-lg z-20 py-1">
+                    <button
+                      onClick={() => { onManage(); setMenuOpen(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-[#1f1a17] hover:bg-neutral-50 transition-colors"
+                    >
+                      View details
+                    </button>
+                    <button
+                      onClick={() => { onMute(); setMenuOpen(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-[#1f1a17] hover:bg-neutral-50 transition-colors"
+                    >
+                      {person.isMuted ? 'Unmute signals' : 'Mute signals'}
+                    </button>
+                    {person.status === 'NEEDS_ATTENTION' && (
+                      <button
+                        onClick={() => { onManage(); setMenuOpen(false); }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-amber-600 hover:bg-amber-50 transition-colors"
+                      >
+                        Fix connection
+                      </button>
+                    )}
+                    <div className="border-t border-black/5 my-1" />
+                    <button
+                      onClick={() => { onRemove(); setMenuOpen(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Remove from circle
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Impact stats */}
@@ -169,33 +216,9 @@ function PersonCard({
           {/* Last signal */}
           {person.lastSignalBookTitle && (
             <p className="text-xs text-neutral-400 mt-1">
-              Last signal: {person.lastSignalBookTitle} · {formatRelativeTime(person.lastSignalAt)}
+              Last: {person.lastSignalBookTitle} · {formatRelativeTime(person.lastSignalAt)}
             </p>
           )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-3 mt-3">
-            {person.booksSurfaced > 0 && (
-              <button
-                onClick={() => {/* TODO: Navigate to signals filtered by person */}}
-                className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
-              >
-                View signals
-              </button>
-            )}
-            <button
-              onClick={onManage}
-              className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
-            >
-              Manage
-            </button>
-            <button
-              onClick={onMute}
-              className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
-            >
-              {person.isMuted ? 'Unmute' : 'Mute'}
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -280,9 +303,9 @@ function ManageDrawer({
               <div
                 key={source.id}
                 className={`p-4 rounded-xl border ${
-                  source.status === 'FAILED' || source.status === 'error'
+                  source.status === 'NEEDS_ATTENTION'
                     ? 'border-red-100 bg-red-50/30'
-                    : source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'warning'
+                    : source.status === 'DELAYED'
                       ? 'border-amber-100 bg-amber-50/30'
                       : 'border-black/5 bg-neutral-50/50'
                 }`}
@@ -293,43 +316,39 @@ function ManageDrawer({
                   </span>
                   <StatusPill
                     variant={
-                      source.status === 'ACTIVE' || source.status === 'active'
+                      source.status === 'ACTIVE'
                         ? 'active'
-                        : source.status === 'FAILED' || source.status === 'error'
+                        : source.status === 'NEEDS_ATTENTION'
                           ? 'danger'
-                          : source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'warning'
-                            ? 'new'
-                            : 'muted'
+                          : 'new'
                     }
                   >
-                    {source.status === 'ACTIVE' || source.status === 'active'
+                    {source.status === 'ACTIVE'
                       ? 'Active'
-                      : source.status === 'FAILED' || source.status === 'error'
-                        ? 'Failed'
-                        : source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'warning'
-                          ? 'Needs attention'
-                          : 'Paused'}
+                      : source.status === 'NEEDS_ATTENTION'
+                        ? 'Needs attention'
+                        : 'Delayed'}
                   </StatusPill>
                 </div>
                 <p className="text-sm text-neutral-600 truncate mb-1">
                   {source.url || 'No URL'}
                 </p>
                 <p className="text-xs text-neutral-400">
-                  Last checked {formatRelativeTime(source.lastSuccessAt)}
+                  {source.checkedAgo ? `Checked ${source.checkedAgo}` : 'Never checked'}
                 </p>
+                {source.healthReason && source.status !== 'ACTIVE' && (
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Issue: {source.healthReason.toLowerCase().replace(/_/g, ' ')}
+                  </p>
+                )}
 
-                {(source.status === 'FAILED' || source.status === 'WARNING' || source.status === 'BACKOFF' || source.status === 'error' || source.status === 'warning') && (
+                {source.status === 'NEEDS_ATTENTION' && (
                   <div className="mt-3 flex gap-2">
                     <button
                       onClick={() => onRetrySource(source.id)}
                       className="px-3 py-1.5 text-xs font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] transition-colors"
                     >
-                      Retry now
-                    </button>
-                    <button
-                      className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-[#1f1a17] transition-colors"
-                    >
-                      Edit URL
+                      Fix connection
                     </button>
                   </div>
                 )}
@@ -530,11 +549,11 @@ export default function CirclePage() {
   const people = data?.people || [];
   const summary = data?.summary;
 
-  // Group people by status
-  const activePeople = people.filter((p) => p.status === 'ACTIVE' || p.status === 'QUIET');
-  const warningPeople = people.filter((p) => p.status === 'WARNING');
+  // Group people by status (3-state taxonomy)
+  const activePeople = people.filter((p) => p.status === 'ACTIVE');
+  const delayedPeople = people.filter((p) => p.status === 'DELAYED');
+  const needsAttentionPeople = people.filter((p) => p.status === 'NEEDS_ATTENTION');
   const mutedPeople = people.filter((p) => p.status === 'MUTED');
-  const pausedPeople = people.filter((p) => p.status === 'PAUSED');
 
   return (
     <div className="max-w-2xl mx-auto px-5 py-12">
@@ -543,30 +562,13 @@ export default function CirclePage() {
         <h1 className="text-2xl font-serif font-semibold text-[#1f1a17] mb-2">
           Your circle
         </h1>
-        <p className="text-[15px] text-neutral-500 leading-relaxed">
+        <p className="text-[15px] text-neutral-500 leading-relaxed mb-1">
           The people whose taste can interrupt you.
         </p>
-        <p className="text-xs text-neutral-400 mt-1">
+        <p className="text-sm text-neutral-400 leading-relaxed">
           Only five-star reads from your circle surface as signals.
         </p>
       </header>
-
-      {/* Summary strip */}
-      {summary && people.length > 0 && (
-        <div className="flex items-center gap-4 text-sm text-neutral-500 mb-8 pb-8 border-b border-black/5">
-          <span>
-            {summary.peopleCount} {summary.peopleCount === 1 ? 'person' : 'people'}
-          </span>
-          <span className="text-neutral-200">·</span>
-          <span>{summary.sourceCount} {summary.sourceCount === 1 ? 'source' : 'sources'}</span>
-          {summary.lastSignalAt && (
-            <>
-              <span className="text-neutral-200">·</span>
-              <span>Last signal {formatRelativeTime(summary.lastSignalAt)}</span>
-            </>
-          )}
-        </div>
-      )}
 
       {people.length === 0 ? (
         /* Empty state */
@@ -583,9 +585,37 @@ export default function CirclePage() {
         </section>
       ) : (
         <div className="space-y-10">
+          {/* Needs attention - show first so problems are visible */}
+          {needsAttentionPeople.length > 0 && (
+            <section>
+              <h2 className="text-xs text-red-600 uppercase tracking-widest mb-4">
+                Needs attention
+              </h2>
+              <p className="text-sm text-neutral-500 mb-4">
+                These sources need you to fix something before signals can resume.
+              </p>
+              <div className="space-y-3">
+                {needsAttentionPeople.map((person) => (
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    onManage={() => setManagingPerson(person.id)}
+                    onMute={() => handleMute(person.id, person.isMuted)}
+                    onRemove={() => handleRemove(person.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Active people */}
           {activePeople.length > 0 && (
             <section>
+              {needsAttentionPeople.length > 0 && (
+                <h2 className="text-xs text-neutral-400 uppercase tracking-widest mb-4">
+                  Active
+                </h2>
+              )}
               <div className="space-y-3">
                 {activePeople.map((person) => (
                   <PersonCard
@@ -600,14 +630,17 @@ export default function CirclePage() {
             </section>
           )}
 
-          {/* Needs attention */}
-          {warningPeople.length > 0 && (
+          {/* Delayed - temporary issues */}
+          {delayedPeople.length > 0 && (
             <section>
               <h2 className="text-xs text-amber-600 uppercase tracking-widest mb-4">
-                Needs attention
+                Delayed
               </h2>
+              <p className="text-sm text-neutral-500 mb-4">
+                Temporary issues. We'll keep trying automatically.
+              </p>
               <div className="space-y-3">
-                {warningPeople.map((person) => (
+                {delayedPeople.map((person) => (
                   <PersonCard
                     key={person.id}
                     person={person}
@@ -628,26 +661,6 @@ export default function CirclePage() {
               </h2>
               <div className="space-y-3">
                 {mutedPeople.map((person) => (
-                  <PersonCard
-                    key={person.id}
-                    person={person}
-                    onManage={() => setManagingPerson(person.id)}
-                    onMute={() => handleMute(person.id, person.isMuted)}
-                    onRemove={() => handleRemove(person.id)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Paused */}
-          {pausedPeople.length > 0 && (
-            <section>
-              <h2 className="text-xs text-neutral-400 uppercase tracking-widest mb-4">
-                Paused
-              </h2>
-              <div className="space-y-3">
-                {pausedPeople.map((person) => (
                   <PersonCard
                     key={person.id}
                     person={person}

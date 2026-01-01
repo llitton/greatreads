@@ -2,6 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { removePersonFromCircle, setPersonMuted } from '@/lib/circle';
+import type { SourceStatusSimple } from '@/lib/circle';
+
+/**
+ * Map raw DB status to simplified 3-state taxonomy
+ */
+function mapToSourceStatus(rawStatus: string): SourceStatusSimple {
+  switch (rawStatus) {
+    case 'ACTIVE':
+      return 'ACTIVE';
+    case 'BACKOFF':
+    case 'WARNING':
+    case 'DRAFT':
+      return 'DELAYED';
+    case 'FAILED':
+    case 'PAUSED':
+    case 'DISABLED':
+    default:
+      return 'NEEDS_ATTENTION';
+  }
+}
+
+/**
+ * Format time ago for display
+ */
+function formatCheckedAgo(date: Date | null): string | null {
+  if (!date) return null;
+
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+
+  if (hours < 1) return 'just now';
+  if (hours < 24) return `${hours}h ago`;
+  if (days === 1) return '1 day ago';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  return `${Math.floor(days / 30)} months ago`;
+}
 
 interface RouteContext {
   params: Promise<{ personId: string }>;
@@ -82,20 +121,22 @@ export async function GET(request: NextRequest, context: RouteContext) {
           type: 'RSS',
           url: s.url,
           title: s.title,
-          status: s.status,
-          failureReasonCode: s.failureReasonCode,
+          status: mapToSourceStatus(s.status),
+          healthReason: s.failureReasonCode,
           lastSuccessAt: s.lastSuccessAt,
           lastAttemptAt: s.lastAttemptAt,
+          checkedAgo: formatCheckedAgo(s.lastAttemptAt),
         })),
         ...person.friendSources.map((s) => ({
           id: s.id,
           type: s.sourceType === 'import' ? 'IMPORT' : 'GOODREADS',
           url: s.rssUrl,
           title: s.label,
-          status: s.active ? 'ACTIVE' : 'PAUSED',
-          failureReasonCode: null,
+          status: mapToSourceStatus(s.active ? 'ACTIVE' : 'PAUSED'),
+          healthReason: null,
           lastSuccessAt: s.lastFetchedAt,
           lastAttemptAt: s.lastFetchedAt,
+          checkedAgo: formatCheckedAgo(s.lastFetchedAt),
         })),
       ],
       impact: {

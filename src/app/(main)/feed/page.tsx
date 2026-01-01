@@ -203,69 +203,88 @@ export default function FeedPage() {
 
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION 2 — Your circle (cause → effect)
-          Anchors causality: People → signals → books
+          Visual, authoritative, scannable. Links to Manage, not inline add.
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="mb-16">
-        <h2 className="text-xs text-neutral-300 uppercase tracking-widest mb-5">
-          Your circle
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs text-neutral-300 uppercase tracking-widest">
+            Your circle
+          </h2>
+          {hasCircle && (
+            <Link
+              href="/circle"
+              className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+            >
+              Manage →
+            </Link>
+          )}
+        </div>
 
-        {/* Person pills - deduped by Person, not Source */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* Person avatars - visual, scannable */}
+        <div className="flex items-center gap-2 mb-4">
           {hasCircle ? (
             <>
               {circlePeople
-                .filter((p) => p.status !== 'MUTED' && p.status !== 'PAUSED')
+                .filter((p) => p.status !== 'MUTED')
+                .slice(0, 8)
                 .map((person) => (
-                  <span
+                  <div
                     key={person.id}
-                    className="inline-flex items-center px-4 py-2 bg-neutral-50 rounded-full text-sm font-medium text-[#1f1a17]"
+                    className="group relative"
+                    title={person.displayName}
                   >
-                    {person.displayName}
-                  </span>
+                    <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-sm font-medium text-neutral-600 border-2 border-white shadow-sm">
+                      {person.displayName.charAt(0).toUpperCase()}
+                    </div>
+                    {/* Hover tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#1f1a17] text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      {person.displayName}
+                    </div>
+                  </div>
                 ))}
-              <Link
-                href="/circle"
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
-              >
-                <span className="text-lg leading-none">+</span>
-                <span>Add someone</span>
-              </Link>
+              {circlePeople.filter((p) => p.status !== 'MUTED').length > 8 && (
+                <span className="text-xs text-neutral-400">
+                  +{circlePeople.filter((p) => p.status !== 'MUTED').length - 8}
+                </span>
+              )}
             </>
           ) : (
             <Link
               href="/circle"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-50 rounded-full text-sm text-neutral-500 hover:bg-neutral-100 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-neutral-50 rounded-full text-sm text-neutral-500 hover:bg-neutral-100 transition-colors"
             >
-              <span className="text-lg leading-none">+</span>
+              <span className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-400">+</span>
               <span>Add someone you trust</span>
             </Link>
           )}
         </div>
 
-        {/* Explanatory sentence */}
+        {/* Single explanatory sentence */}
         <p className="text-sm text-neutral-400 leading-relaxed">
-          GreatReads doesn&apos;t guess. Books appear here only when someone in your circle gives a five-star signal or adds a book to their canon.
+          Books appear here only when someone in your circle gives five stars.
         </p>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION 3 — Canon (baseline worldview)
-          This is identity, not recommendation. Context, not content.
+          Functional clarity: explain what canon does, not just what it is.
       ═══════════════════════════════════════════════════════════════════ */}
       {hasCanon && (
         <section className="mb-16">
           <div className="bg-gradient-to-b from-[#faf8f5] to-[#f5f0e8] rounded-2xl p-8 border border-[#f0ebe3]">
             <div className="mb-8">
               <h2 className="text-lg font-semibold text-[#1f1a17] mb-1">
-                Mark&apos;s canon
+                Your canon
               </h2>
-              <p className="text-sm text-neutral-500">
-                These books shaped how you think. They anchor everything else you see here.
+              <p className="text-sm text-neutral-500 mb-1">
+                These books shaped how you think.
+              </p>
+              <p className="text-xs text-neutral-400">
+                They influence how recommendations are weighted and interpreted.
               </p>
             </div>
 
-            {/* Canon shelf */}
+            {/* Canon shelf - clean, no repeated labels */}
             <div className="flex flex-wrap gap-6">
               {topTen.items.slice(0, 5).map((item) => (
                 <div key={item.id} className="flex-shrink-0 w-24">
@@ -280,28 +299,26 @@ export default function FeedPage() {
                     {item.book.title}
                   </p>
                   {item.book.author && (
-                    <p className="text-[10px] text-neutral-400 truncate mb-1.5">
+                    <p className="text-[10px] text-neutral-400 truncate">
                       {item.book.author}
                     </p>
                   )}
-                  <span className="inline-block text-[10px] text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
-                    From your Top 10
-                  </span>
                 </div>
               ))}
             </div>
 
-            {/* Link to full Top 10 */}
-            {topTen.items.length > 5 && (
-              <div className="mt-6 pt-6 border-t border-[#f0ebe3]">
-                <Link
-                  href="/top10"
-                  className="text-sm text-neutral-500 hover:text-[#1f1a17] transition-colors"
-                >
-                  See all {topTen.items.length} books in your canon →
-                </Link>
-              </div>
-            )}
+            {/* Source + link - shown once, not per book */}
+            <div className="mt-6 pt-6 border-t border-[#f0ebe3] flex items-center justify-between">
+              <span className="text-xs text-neutral-400">
+                Sourced from your Top 10
+              </span>
+              <Link
+                href="/top10"
+                className="text-xs text-neutral-500 hover:text-[#1f1a17] transition-colors"
+              >
+                {topTen.items.length > 5 ? `See all ${topTen.items.length} →` : 'Edit canon →'}
+              </Link>
+            </div>
           </div>
         </section>
       )}
@@ -316,11 +333,11 @@ export default function FeedPage() {
         </h2>
 
         {hasSignals ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {signals.map((signal) => (
               <article
                 key={signal.actionId}
-                className="bg-white rounded-2xl border border-black/5 p-5 shadow-sm"
+                className="group bg-white rounded-2xl border border-black/5 p-5 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex gap-4">
                   <BookCover
@@ -331,6 +348,7 @@ export default function FeedPage() {
                     className="shadow-md"
                   />
                   <div className="flex-1 min-w-0">
+                    {/* Book info */}
                     <h3 className="font-semibold text-[#1f1a17] mb-0.5">
                       {signal.title || 'Untitled'}
                     </h3>
@@ -340,35 +358,34 @@ export default function FeedPage() {
                       </p>
                     )}
 
-                    {/* Attribution */}
-                    <p className="text-sm text-neutral-600 mb-2">
+                    {/* Attribution - clean format */}
+                    <p className="text-sm mb-2">
                       <span className="text-amber-500">★★★★★</span>
-                      <span className="text-neutral-400"> from </span>
-                      <span className="font-medium text-[#1f1a17]">
+                      <span className="font-medium text-[#1f1a17] ml-1">
                         {signal.source.title || 'Someone'}
                       </span>
                     </p>
 
-                    {/* Optional quote/note */}
+                    {/* Optional quote - compact */}
                     {signal.cleanText && (
                       <p className="text-sm text-neutral-500 italic leading-relaxed line-clamp-2">
                         &ldquo;{signal.cleanText}&rdquo;
                       </p>
                     )}
 
-                    {/* Actions */}
-                    <div className="flex gap-3 mt-4">
+                    {/* Actions - quiet by default, prominent on hover */}
+                    <div className="flex gap-3 mt-4 opacity-60 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleSaveSignal(signal.itemId, signal.source.title)}
                         className="px-4 py-1.5 text-sm font-medium text-white bg-[#1f1a17] rounded-lg hover:bg-[#2f2a27] transition-colors"
                       >
-                        Save to My Books
+                        Save
                       </button>
                       <button
                         onClick={() => handleIgnoreSignal(signal.itemId)}
                         className="px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
                       >
-                        Not for me
+                        Pass
                       </button>
                     </div>
                   </div>

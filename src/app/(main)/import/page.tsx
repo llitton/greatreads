@@ -62,6 +62,9 @@ export default function ImportPage() {
   const [importNotes, setImportNotes] = useState(false);
   const [visibility, setVisibility] = useState<'friends' | 'private'>('friends');
 
+  // Books to exclude from import (user removed during review)
+  const [excludedBookIds, setExcludedBookIds] = useState<Set<string>>(new Set());
+
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -143,9 +146,20 @@ export default function ImportPage() {
     setResult(null);
     setError('');
     setErrorCode('');
+    setExcludedBookIds(new Set());
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleRemoveBook = (bookId: string) => {
+    setExcludedBookIds(prev => new Set([...prev, bookId]));
+  };
+
+  const handleRemoveAll = () => {
+    if (!preview) return;
+    const allIds = preview.fiveStarBooks.map(b => b.goodreadsBookId);
+    setExcludedBookIds(new Set(allIds));
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -155,14 +169,27 @@ export default function ImportPage() {
     return (
       <div className="max-w-xl mx-auto px-5 py-8">
         {/* Header - lead with intent */}
-        <header className="mb-16">
+        <header className="mb-10">
           <h1 className="text-2xl font-serif text-[#1f1a17] mb-3">
-            Bring in only what mattered
+            Bring in only what stayed with you
           </h1>
           <p className="text-[15px] text-neutral-500 leading-relaxed">
-            This import looks for the books you loved enough to give five stars — and quietly ignores the rest.
+            We&apos;ll bring in only the books you loved enough to give five stars — and quietly ignore the rest.
           </p>
         </header>
+
+        {/* What this import will never do - a pledge (trust builder first) */}
+        <section className="py-6 border-y border-neutral-100 mb-10">
+          <p className="text-xs text-neutral-400 mb-4">
+            This import is intentionally limited.
+          </p>
+          <div className="space-y-2 text-sm text-neutral-500">
+            <p>It will never create a feed you need to check</p>
+            <p>It will never track your reading progress</p>
+            <p>It will never surface books you didn&apos;t love</p>
+            <p>It will never post anything back to Goodreads</p>
+          </div>
+        </section>
 
         {/* Upload area - a promise, not a box */}
         <section className="mb-8">
@@ -178,28 +205,45 @@ export default function ImportPage() {
             htmlFor="csv-upload"
             className="block w-full p-8 bg-[#fdfcfa] border-2 border-dashed border-[#f0ebe3] rounded-2xl text-center cursor-pointer hover:border-neutral-300 hover:bg-neutral-50 transition-all"
           >
-            <p className="text-[15px] font-medium text-[#1f1a17] mb-2">
-              Upload your Goodreads export
+            <p className="text-[15px] font-medium text-[#1f1a17] mb-1">
+              Upload Goodreads export
             </p>
-            <p className="text-sm text-neutral-500 mb-5">
-              We&apos;ll show you exactly what qualifies.
+            <p className="text-sm text-neutral-400 mb-5">
+              Preview before saving
             </p>
 
             {/* Expectation setting */}
             <div className="inline-flex flex-col items-start text-left bg-white rounded-xl p-5 border border-black/5">
-              <p className="text-xs text-neutral-400 mb-2">Typical result</p>
-              <p className="text-sm text-neutral-600">5–20 books</p>
-              <p className="text-sm text-neutral-600">All rated ★★★★★</p>
-              <p className="text-sm text-neutral-400">No shelves, no averages, no noise</p>
+              <p className="text-xs text-neutral-400 mb-2">What usually comes through</p>
+              <p className="text-sm text-neutral-600">• 5–20 books you truly loved</p>
+              <p className="text-sm text-neutral-600">• Only five-star reads</p>
+              <p className="text-sm text-neutral-400">• No shelves, averages, or reading stats</p>
             </div>
           </label>
         </section>
 
-        {/* Single narrative flow for instructions */}
-        <section className="mb-8">
-          <p className="text-sm text-neutral-500 leading-relaxed mb-3">
-            Export your Goodreads library, upload the CSV here, and review what qualifies before anything is saved.
+        {/* Where books go - the outcome */}
+        <section className="mb-8 p-5 bg-neutral-50 rounded-xl">
+          <p className="text-xs text-neutral-400 uppercase tracking-wide mb-3">After import</p>
+          <p className="text-sm text-neutral-600 leading-relaxed mb-2">
+            These books will appear in <span className="font-medium text-[#1f1a17]">My Books</span> — not your canon.
           </p>
+          <p className="text-sm text-neutral-500 leading-relaxed">
+            You&apos;ll decide what stays, what fades, and what belongs in your Top 10.
+          </p>
+        </section>
+
+        {/* Review step expectation */}
+        <section className="mb-8 text-center">
+          <p className="text-sm text-neutral-500 leading-relaxed">
+            Before anything is saved, you&apos;ll review the list.
+            <br />
+            <span className="text-neutral-400">Remove anything that doesn&apos;t feel right.</span>
+          </p>
+        </section>
+
+        {/* Instructions */}
+        <section className="mb-8">
           <details className="group">
             <summary className="text-xs text-neutral-400 hover:text-neutral-600 cursor-pointer transition-colors">
               How to export from Goodreads →
@@ -215,23 +259,10 @@ export default function ImportPage() {
           </details>
         </section>
 
-        {/* What this will never do - a pledge */}
-        <section className="py-8 border-y border-neutral-100 mb-8">
-          <p className="text-xs text-neutral-300 uppercase tracking-widest mb-5">
-            What this import will never do
-          </p>
-          <div className="space-y-2 text-sm text-neutral-500">
-            <p>Create a feed you need to check</p>
-            <p>Track your reading progress</p>
-            <p>Surface books you didn&apos;t love</p>
-            <p>Post anything back to Goodreads</p>
-          </div>
-        </section>
-
         {/* Quiet reassurance */}
         <section className="text-center mb-8">
           <p className="text-sm text-neutral-400 leading-relaxed">
-            This is a one-time import.
+            Most people import once.
             <br />
             You can delete everything later.
           </p>
@@ -326,144 +357,138 @@ export default function ImportPage() {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // SCREEN C: Preview - A reveal, not a checklist
+  // SCREEN C: Preview - Simple review, not a checklist
   // ═══════════════════════════════════════════════════════════════════
   if (screen === 'preview' && preview) {
-    const qualifyingCount = preview.fiveStarBooks.length + preview.favorites.length;
+    const qualifyingBooks = preview.fiveStarBooks.filter(
+      book => !excludedBookIds.has(book.goodreadsBookId)
+    );
+    const selectedCount = qualifyingBooks.length;
+    const hasBooks = selectedCount > 0;
+
+    // Empty state - nothing qualifies
+    if (preview.fiveStarBooks.length === 0) {
+      return (
+        <div className="max-w-xl mx-auto px-5 py-8">
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="text-center max-w-md">
+              <div className="text-4xl mb-8 opacity-50">◌</div>
+              <h2 className="text-lg font-medium text-[#1f1a17] mb-4">
+                Nothing qualifies — and that&apos;s okay.
+              </h2>
+              <p className="text-sm text-neutral-500 mb-8">
+                Five-star imports are intentionally rare.
+              </p>
+              <Link href="/feed">
+                <Button>Back to Feed</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="max-w-xl mx-auto px-5 py-8">
-        {/* Reveal header */}
-        <header className="mb-8 text-center">
-          <p className="text-4xl font-serif text-[#1f1a17] mb-3">
-            {qualifyingCount}
-          </p>
-          <p className="text-lg text-neutral-600 mb-2">
-            books showed the strongest signal
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-2xl font-serif text-[#1f1a17] mb-3">
+            Review what qualifies
+          </h1>
+          <p className="text-[15px] text-neutral-500 leading-relaxed mb-1">
+            These are the books you rated five stars.
           </p>
           <p className="text-sm text-neutral-400">
-            These are the books that earned their place.
+            They&apos;ll be added to <span className="font-medium text-neutral-500">My Books</span> — not your canon.
           </p>
         </header>
 
-        {/* Signal breakdown - subtle */}
-        <section className="mb-8 py-5 border-y border-neutral-100">
-          <div className="flex justify-center gap-8 text-center">
-            <div>
-              <p className="text-2xl font-medium text-amber-600">{preview.fiveStarBooks.length}</p>
-              <p className="text-xs text-neutral-400">five-star</p>
-            </div>
-            <div>
-              <p className="text-2xl font-medium text-rose-500">{preview.favorites.length}</p>
-              <p className="text-xs text-neutral-400">favorites</p>
-            </div>
-            <div>
-              <p className="text-2xl font-medium text-neutral-400">{preview.booksWithNotes.length}</p>
-              <p className="text-xs text-neutral-400">with notes</p>
-            </div>
-          </div>
-        </section>
-
-        {/* What happens - quiet */}
-        <section className="mb-8">
-          <p className="text-xs text-neutral-300 uppercase tracking-widest mb-3">
-            What this means
+        {/* Count and bulk action */}
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-sm text-neutral-500">
+            {selectedCount} book{selectedCount !== 1 ? 's' : ''} selected
           </p>
-          <div className="space-y-2 text-sm text-neutral-500 leading-relaxed">
-            <p>Your 5-stars will appear in your friends&apos; feeds.</p>
-            <p>Favorites will populate &quot;Stayed.&quot;</p>
-            <p>Some may be suggested for your Top 10.</p>
-          </div>
-        </section>
+          {selectedCount > 0 && (
+            <button
+              onClick={handleRemoveAll}
+              className="text-xs text-neutral-400 hover:text-red-500 transition-colors"
+            >
+              Remove all
+            </button>
+          )}
+        </div>
 
-        {/* Options - simplified */}
-        <section className="mb-8 space-y-3">
-          <p className="text-xs text-neutral-300 uppercase tracking-widest mb-3">
-            What to bring in
-          </p>
-
-          <label className="flex items-center justify-between p-5 bg-[#fdfcfa] rounded-xl border border-[#f0ebe3] cursor-pointer hover:bg-neutral-50 transition-colors">
-            <div>
-              <p className="text-sm font-medium text-[#1f1a17]">5-star ratings</p>
-              <p className="text-xs text-neutral-400">{preview.fiveStarBooks.length} books</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={importFiveStars}
-              onChange={(e) => setImportFiveStars(e.target.checked)}
-              className="w-5 h-5 rounded border-neutral-300 text-[#1f1a17] focus:ring-[#1f1a17]"
-            />
-          </label>
-
-          <label className="flex items-center justify-between p-5 bg-[#fdfcfa] rounded-xl border border-[#f0ebe3] cursor-pointer hover:bg-neutral-50 transition-colors">
-            <div>
-              <p className="text-sm font-medium text-[#1f1a17]">Favorites shelf</p>
-              <p className="text-xs text-neutral-400">{preview.favorites.length} books</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={importFavorites}
-              onChange={(e) => setImportFavorites(e.target.checked)}
-              className="w-5 h-5 rounded border-neutral-300 text-[#1f1a17] focus:ring-[#1f1a17]"
-            />
-          </label>
-
-          {preview.booksWithNotes.length > 0 && (
-            <label className="flex items-center justify-between p-5 bg-[#fdfcfa] rounded-xl border border-[#f0ebe3] cursor-pointer hover:bg-neutral-50 transition-colors">
-              <div>
-                <p className="text-sm font-medium text-[#1f1a17]">Notes (private)</p>
-                <p className="text-xs text-neutral-400">{preview.booksWithNotes.length} books</p>
+        {/* Book list */}
+        <section className="mb-8 space-y-2">
+          {qualifyingBooks.map((book) => (
+            <div
+              key={book.goodreadsBookId}
+              className="flex items-center gap-4 p-4 bg-[#fdfcfa] rounded-xl border border-[#f0ebe3] group"
+            >
+              {/* Placeholder cover */}
+              <div className="w-10 h-14 bg-neutral-100 rounded flex-shrink-0 flex items-center justify-center">
+                <span className="text-neutral-300 text-xs">📖</span>
               </div>
-              <input
-                type="checkbox"
-                checked={importNotes}
-                onChange={(e) => setImportNotes(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 text-[#1f1a17] focus:ring-[#1f1a17]"
-              />
-            </label>
+
+              {/* Book info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#1f1a17] truncate">
+                  {book.title}
+                </p>
+                {book.author && (
+                  <p className="text-xs text-neutral-500 truncate">{book.author}</p>
+                )}
+                <p className="text-[10px] text-neutral-300 mt-1">From Goodreads</p>
+              </div>
+
+              {/* Remove button */}
+              <button
+                onClick={() => handleRemoveBook(book.goodreadsBookId)}
+                className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-full text-neutral-300 hover:bg-red-50 hover:text-red-500 transition-all"
+                aria-label="Remove"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+
+          {/* All removed state */}
+          {selectedCount === 0 && preview.fiveStarBooks.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-sm text-neutral-500 mb-4">All books removed.</p>
+              <button
+                onClick={() => setExcludedBookIds(new Set())}
+                className="text-sm text-neutral-400 hover:text-[#1f1a17] transition-colors"
+              >
+                Restore all →
+              </button>
+            </div>
           )}
         </section>
 
-        {/* Visibility - cleaner */}
-        <section className="mb-8">
-          <p className="text-xs text-neutral-300 uppercase tracking-widest mb-3">
-            Visibility
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setVisibility('friends')}
-              className={`flex-1 p-5 rounded-xl border transition-all text-left ${
-                visibility === 'friends'
-                  ? 'border-[#1f1a17] bg-neutral-50'
-                  : 'border-[#f0ebe3] hover:border-neutral-200'
-              }`}
-            >
-              <p className="text-sm font-medium text-[#1f1a17]">Friends</p>
-              <p className="text-xs text-neutral-400">Show in feeds</p>
-            </button>
-            <button
-              onClick={() => setVisibility('private')}
-              className={`flex-1 p-5 rounded-xl border transition-all text-left ${
-                visibility === 'private'
-                  ? 'border-[#1f1a17] bg-neutral-50'
-                  : 'border-[#f0ebe3] hover:border-neutral-200'
-              }`}
-            >
-              <p className="text-sm font-medium text-[#1f1a17]">Only me</p>
-              <p className="text-xs text-neutral-400">Keep private</p>
-            </button>
-          </div>
-        </section>
-
-        {/* Actions */}
+        {/* Actions - sticky at bottom */}
         <section className="flex gap-3">
-          <Button onClick={handleImport} size="lg" className="flex-1">
-            Bring these in
+          <Button
+            onClick={handleImport}
+            size="lg"
+            className="flex-1"
+            disabled={!hasBooks}
+          >
+            Add to My Books
           </Button>
           <Button variant="secondary" onClick={handleReset}>
-            Cancel
+            Cancel import
           </Button>
         </section>
+
+        {/* Trust footer */}
+        <footer className="mt-8 text-center">
+          <p className="text-sm text-neutral-300 italic">
+            You can delete or change anything later.
+          </p>
+        </footer>
       </div>
     );
   }
@@ -495,33 +520,25 @@ export default function ImportPage() {
   // SCREEN E: Done
   // ═══════════════════════════════════════════════════════════════════
   if (screen === 'done' && result) {
+    const totalAdded = progress.added;
+
     return (
       <div className="max-w-xl mx-auto px-5 py-8">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <p className="text-4xl font-serif text-[#1f1a17] mb-4">
-            Done
+            {totalAdded} book{totalAdded !== 1 ? 's' : ''} added
           </p>
           <p className="text-lg text-neutral-500">
-            Your library is in.
+            They&apos;re in My Books now.
           </p>
         </div>
 
-        {/* Results - quiet revelation */}
-        <section className="mb-8 py-8 border-y border-neutral-100">
-          <div className="flex justify-center gap-8 text-center">
-            <div>
-              <p className="text-2xl font-medium text-amber-600">{result.feedBooks}</p>
-              <p className="text-xs text-neutral-400">for friends</p>
-            </div>
-            <div>
-              <p className="text-2xl font-medium text-rose-500">{result.stayedWithMe}</p>
-              <p className="text-xs text-neutral-400">in Stayed</p>
-            </div>
-            <div>
-              <p className="text-2xl font-medium text-neutral-500">{result.topTenCandidates}</p>
-              <p className="text-xs text-neutral-400">Top 10 candidates</p>
-            </div>
-          </div>
+        {/* What happens next - quiet */}
+        <section className="mb-8 p-5 bg-neutral-50 rounded-xl">
+          <p className="text-xs text-neutral-400 uppercase tracking-wide mb-3">What happens next</p>
+          <p className="text-sm text-neutral-600 leading-relaxed">
+            These books are yours to revisit. When you&apos;re ready, add reflections to the ones that shaped you — and consider them for your canon.
+          </p>
         </section>
 
         {/* Import notes */}
@@ -534,18 +551,20 @@ export default function ImportPage() {
 
         {/* Actions */}
         <section className="flex flex-col gap-3 max-w-xs mx-auto">
-          <Link href="/feed">
-            <Button className="w-full">Go to Feed</Button>
+          <Link href="/my-books">
+            <Button className="w-full">Go to My Books</Button>
           </Link>
-          <Link href="/reflections">
-            <Button variant="secondary" className="w-full">See what stayed</Button>
+          <Link href="/feed">
+            <Button variant="secondary" className="w-full">Back to Feed</Button>
           </Link>
         </section>
 
         {/* Footer */}
-        <footer className="mt-24 pt-12 border-t border-neutral-50 text-center">
+        <footer className="mt-16 pt-8 border-t border-neutral-50 text-center">
           <p className="text-sm text-neutral-300 italic leading-relaxed">
-            If a book appears after import, it&apos;s because it earned its place.
+            Importing saves books to My Books.
+            <br />
+            Canon takes reflection and time.
           </p>
         </footer>
       </div>
