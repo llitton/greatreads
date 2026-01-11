@@ -90,13 +90,15 @@ function EmailSentState({ email, onReset }: { email: string; onReset: () => void
 
 function LoginForm() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [usePassword, setUsePassword] = useState(false);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/feed';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -120,6 +122,31 @@ function LoginForm() {
     }
   };
 
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+        callbackUrl,
+      });
+
+      if (result?.error) {
+        setError('Invalid email or password.');
+      } else if (result?.ok) {
+        window.location.href = callbackUrl;
+      }
+    } catch {
+      setError('An unexpected error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (sent) {
     return <EmailSentState email={email} onReset={() => setSent(false)} />;
   }
@@ -135,7 +162,7 @@ function LoginForm() {
             Sign in or create account
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={usePassword ? handlePasswordSubmit : handleMagicLinkSubmit} className="space-y-5">
             <Input
               label="Email address"
               type="email"
@@ -146,6 +173,17 @@ function LoginForm() {
               autoFocus
             />
 
+            {usePassword && (
+              <Input
+                label="Password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            )}
+
             {error && (
               <p className="text-sm text-[#9c3d3d] bg-[#9c3d3d]/10 rounded-lg px-4 py-3">
                 {error}
@@ -153,12 +191,27 @@ function LoginForm() {
             )}
 
             <Button type="submit" loading={loading} className="w-full">
-              Continue with Email
+              {usePassword ? 'Sign in with Password' : 'Continue with Email'}
             </Button>
           </form>
 
-          <p className="mt-5 text-xs text-center text-[#8b7355]">
-            We&apos;ll send you a sign-in link. No password needed.
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setUsePassword(!usePassword);
+                setError('');
+              }}
+              className="text-sm text-[#5b4a3f] hover:text-[#1f1a17] underline"
+            >
+              {usePassword ? 'Use magic link instead' : 'Sign in with password'}
+            </button>
+          </div>
+
+          <p className="mt-4 text-xs text-center text-[#8b7355]">
+            {usePassword
+              ? 'Enter your email and password to sign in.'
+              : "We'll send you a sign-in link. No password needed."}
           </p>
         </div>
       </div>

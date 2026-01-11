@@ -1,7 +1,9 @@
 import NextAuth from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import Resend from 'next-auth/providers/resend';
+import Credentials from 'next-auth/providers/credentials';
 import { Resend as ResendClient } from 'resend';
+import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -13,7 +15,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async sendVerificationRequest({ identifier: email, url, provider }) {
         const resend = new ResendClient(process.env.RESEND_API_KEY);
 
-        await resend.emails.send({
+        try {
+          const result = await resend.emails.send({
           from: provider.from || 'Laura <noreply@greatreads.app>',
           to: email,
           subject: "Laura made something for you 📚",
@@ -53,7 +56,54 @@ Sign in here:
 ${url}
 
 — Laura`,
+          });
+
+          if (result.error) {
+            console.error('Failed to send verification email:', result.error);
+            throw new Error(`Email send failed: ${result.error.message}`);
+          }
+
+          console.log('Verification email sent successfully to:', email);
+        } catch (error) {
+          console.error('Error sending verification email to', email, ':', error);
+          throw error;
+        }
+      },
+    }),
+    Credentials({
+      name: 'Password',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email as string },
         });
+
+        if (!user || !user.password) {
+          return null;
+        }
+
+        const isValid = await bcrypt.compare(
+          credentials.password as string,
+          user.password
+        );
+
+        if (!isValid) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        };
       },
     }),
   ],
@@ -63,9 +113,15 @@ ${url}
     error: '/login',
   },
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
       }
       return session;
     },
@@ -86,6 +142,6 @@ ${url}
     },
   },
   session: {
-    strategy: 'database',
+    strategy: 'jwt',
   },
 });

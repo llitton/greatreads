@@ -54,6 +54,7 @@ model User {
   emailVerified DateTime?
   image         String?
   phone         String?
+  password      String?   // Hashed password for credentials login
   notifyEmail   Boolean   @default(true)
   notifySms     Boolean   @default(false)
   isGiftUser    Boolean   @default(false) // For Mark Thomas Litton
